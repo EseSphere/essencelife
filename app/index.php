@@ -1,4 +1,52 @@
-<?php require_once('header-panel.php'); ?>
+<?php
+require_once('header-panel.php');
+
+// Start the session at the top
+session_start();
+
+$alertMessage = '';
+$alertClass = '';
+
+// Handle login form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  $email = trim($_POST['logemail']);
+  $password = $_POST['logpass'];
+
+  // Fetch user by email
+  $stmt = $conn->prepare("SELECT id, user_id, name, password FROM users WHERE email = ?");
+  $stmt->bind_param("s", $email);
+  $stmt->execute();
+  $stmt->store_result();
+
+  if ($stmt->num_rows > 0) {
+    $stmt->bind_result($id, $user_id, $name, $hashedPassword);
+    $stmt->fetch();
+
+    // Verify password
+    if (password_verify($password, $hashedPassword)) {
+      // Login successful, store user info in session
+      $_SESSION['user_id'] = $user_id;
+      $_SESSION['name'] = $name;
+      $_SESSION['logged_in'] = true;
+
+      // Redirect to protected page
+      header("Location: question.php");
+      exit;
+    } else {
+      $alertMessage = "Email or password is incorrect.";
+      $alertClass = "danger";
+    }
+  } else {
+    $alertMessage = "Email or password is incorrect.";
+    $alertClass = "danger";
+  }
+
+  $stmt->close();
+}
+
+$conn->close();
+?>
+
 <style>
   #submitQuestionnaire,
   #btnSubmitForm {
@@ -28,9 +76,16 @@
               <h4 class="mb-4 pb-3 text-white">Log In</h4>
 
               <!-- Alert container -->
-              <div id="alertContainer" class="alert-container"></div>
+              <div id="alertContainer" class="alert-container">
+                <?php if ($alertMessage): ?>
+                  <div class="alert alert-<?= $alertClass ?> alert-dismissible fade show" role="alert">
+                    <?= $alertMessage ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  </div>
+                <?php endif; ?>
+              </div>
 
-              <form id="submitForm" autocomplete="off">
+              <form id="submitForm" method="POST" autocomplete="off">
                 <div class="form-group">
                   <input type="email" required name="logemail" class="form-style" placeholder="Email" id="logemail" autocomplete="off">
                   <i class="input-icon uil uil-at"></i>
@@ -51,6 +106,7 @@
                   </div>
                 </div>
               </form>
+
             </div>
           </div>
         </div>
@@ -58,91 +114,5 @@
     </div>
   </div>
 </div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('submitForm');
-    const alertContainer = document.getElementById('alertContainer');
-    let db;
-
-    const request = indexedDB.open('essence_life');
-
-    request.onsuccess = (event) => {
-      db = event.target.result;
-    };
-
-    request.onerror = (event) => {
-      showAlert('Database error: ' + event.target.errorCode, 'danger');
-    };
-
-    form.addEventListener('submit', function(e) {
-      e.preventDefault();
-
-      const email = document.getElementById('logemail').value.trim();
-      const password = document.getElementById('logpass').value.trim();
-      const hashedPassword = btoa(password);
-
-      if (!db) {
-        showAlert('Database not ready. Please try again.', 'danger');
-        return;
-      }
-
-      const transaction = db.transaction(['users'], 'readonly');
-      const objectStore = transaction.objectStore('users');
-
-      // Check if email index exists
-      if (objectStore.indexNames.contains('email')) {
-        const index = objectStore.index('email');
-        const getRequest = index.get(email);
-
-        getRequest.onsuccess = () => {
-          const user = getRequest.result;
-          if (user && user.password === hashedPassword) {
-            window.location.href = 'question.php';
-          } else {
-            showAlert('Email or password is incorrect.', 'danger');
-          }
-        };
-
-        getRequest.onerror = () => {
-          showAlert('Error reading user data.', 'danger');
-        };
-      } else {
-        // Fallback: scan all users
-        let found = false;
-        const cursorRequest = objectStore.openCursor();
-        cursorRequest.onsuccess = (event) => {
-          const cursor = event.target.result;
-          if (cursor) {
-            const user = cursor.value;
-            if (user.email === email && user.password === hashedPassword) {
-              found = true;
-              window.location.href = 'question.php';
-              return;
-            }
-            cursor.continue();
-          } else {
-            if (!found) showAlert('Email or password is incorrect.', 'danger');
-          }
-        };
-        cursorRequest.onerror = () => {
-          showAlert('Error scanning users.', 'danger');
-        };
-      }
-    });
-
-    function showAlert(message, type = 'success') {
-      alertContainer.innerHTML = '';
-      const alertDiv = document.createElement('div');
-      alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-      alertDiv.role = 'alert';
-      alertDiv.innerHTML = `
-      ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-      alertContainer.appendChild(alertDiv);
-    }
-  });
-</script>
 
 <?php require_once('footer-panel.php'); ?>
