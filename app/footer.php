@@ -12,9 +12,9 @@
     <a class="nav-link <?php if (basename($_SERVER['PHP_SELF']) == './discover') {
                           echo 'active';
                         } ?>" href="./discover"><i class="bi bi-compass"></i> Discover</a>
-    <a class="nav-link <?php if (basename($_SERVER['PHP_SELF']) == './profile') {
+    <a class="nav-link <?php if (basename($_SERVER['PHP_SELF']) == './logout') {
                           echo 'active';
-                        } ?>" href="./profile"><i class="bi bi-person-circle"></i> Profile</a>
+                        } ?>" href="./logout"><i class="bi bi-person-circle"></i> Profile</a>
   </div>
 </nav>
 

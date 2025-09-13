@@ -59,9 +59,9 @@ if (client_wants_json()) {
 } else {
     $_SESSION['flash_message'] = $response['message'];
     if (!empty($response['success'])) {
-        header('Location: question.php');
+        header('Location: ./questionnaire');
     } else {
-        header('Location: index.php');
+        header('Location: ./index');
     }
     $conn->close();
     exit;
