@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 12, 2025 at 01:33 PM
+-- Generation Time: Sep 13, 2025 at 06:16 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -85,25 +85,51 @@ INSERT INTO `contents` (`id`, `content_name`, `content_type`, `content_url`, `im
 
 CREATE TABLE `playlists` (
   `id` int(11) NOT NULL,
-  `user_id` varchar(500) NOT NULL,
-  `name` varchar(500) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  `updated_at` date NOT NULL
+  `user_id` varchar(50) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `cover_image` varchar(500) DEFAULT NULL,
+  `status` enum('active','inactive') DEFAULT 'active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `playlists`
+--
+
+INSERT INTO `playlists` (`id`, `user_id`, `name`, `description`, `cover_image`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'user_1757757067', 'Meditations', NULL, NULL, 'active', '2025-09-13 15:07:11', '2025-09-13 15:07:11'),
+(3, 'user_1757757067', 'My moment', NULL, NULL, 'active', '2025-09-13 15:14:12', '2025-09-13 15:14:12'),
+(4, 'user_1757757067', 'Favourite', NULL, NULL, 'active', '2025-09-13 15:27:08', '2025-09-13 15:27:08'),
+(6, 'user_1757757067', 'Many many ways', NULL, NULL, 'active', '2025-09-13 15:37:05', '2025-09-13 15:37:05'),
+(7, 'user_1757757067', 'Prayers', NULL, NULL, 'active', '2025-09-13 15:39:27', '2025-09-13 15:39:27');
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `playlist_audio`
+-- Table structure for table `playlist_audios`
 --
 
-CREATE TABLE `playlist_audio` (
+CREATE TABLE `playlist_audios` (
   `id` int(11) NOT NULL,
-  `user_id` varchar(500) NOT NULL,
-  `name` varchar(500) NOT NULL,
-  `audio` varchar(500) NOT NULL,
+  `playlist_id` varchar(50) NOT NULL,
+  `audio_id` varchar(50) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `playlist_audios`
+--
+
+INSERT INTO `playlist_audios` (`id`, `playlist_id`, `audio_id`, `created_at`) VALUES
+(1, '6', '30', '2025-09-13 15:51:32'),
+(2, '6', '29', '2025-09-13 15:51:39'),
+(3, '6', '28', '2025-09-13 15:51:42'),
+(4, '6', '26', '2025-09-13 15:51:43'),
+(5, '6', '25', '2025-09-13 15:51:45'),
+(6, '6', '17', '2025-09-13 16:03:31'),
+(9, '6', '8', '2025-09-13 16:12:09');
 
 -- --------------------------------------------------------
 
@@ -118,6 +144,7 @@ CREATE TABLE `users` (
   `email` varchar(500) NOT NULL,
   `phone` varchar(500) NOT NULL,
   `password` varchar(500) NOT NULL,
+  `image` varchar(500) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
   `updated_at` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -126,8 +153,37 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `user_id`, `name`, `email`, `phone`, `password`, `created_at`, `updated_at`) VALUES
-(1, 'US1001', 'Samson', 'samson@yahoo.com', '0748847474', 'a8f5dea10f7504a0305998adef3a9c8c2f769c475ad5a3baf23acf9be81cea33', '2025-09-12 11:07:59', '0000-00-00');
+INSERT INTO `users` (`id`, `user_id`, `name`, `email`, `phone`, `password`, `image`, `created_at`, `updated_at`) VALUES
+(1, 'user_1757757067', 'Master Manas', 'deman4master@gmail.com', '', '$2y$10$JyRoy9RnDvCHkUjTTS2XKOKWNC5a/tfsWUWnBft57XhyGI4leQ2k.', '', '2025-09-13 09:51:07', '2025-09-13');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_answers`
+--
+
+CREATE TABLE `user_answers` (
+  `id` int(11) NOT NULL,
+  `user_id` varchar(500) NOT NULL,
+  `question_id` varchar(500) NOT NULL,
+  `answer` varchar(255) NOT NULL,
+  `session_id` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `user_answers`
+--
+
+INSERT INTO `user_answers` (`id`, `user_id`, `question_id`, `answer`, `session_id`, `created_at`) VALUES
+(10, 'user_1757757067', '1', 'Reduce Stress', 'cl08huk9piq4fdh60p57jmkkt5', '2025-09-13 14:50:53'),
+(11, 'user_1757757067', '1', 'Improve Sleep', 'cl08huk9piq4fdh60p57jmkkt5', '2025-09-13 14:50:53'),
+(12, 'user_1757757067', '1', 'Increase Focus', 'cl08huk9piq4fdh60p57jmkkt5', '2025-09-13 14:50:53'),
+(13, 'user_1757757067', '2', 'Occasionally', 'cl08huk9piq4fdh60p57jmkkt5', '2025-09-13 14:50:55'),
+(14, 'user_1757757067', '2', 'Sometimes', 'cl08huk9piq4fdh60p57jmkkt5', '2025-09-13 14:50:55'),
+(15, 'user_1757757067', '3', 'I rely on sleep aids', 'cl08huk9piq4fdh60p57jmkkt5', '2025-09-13 14:50:56'),
+(16, 'user_1757757067', '4', 'No stress', 'cl08huk9piq4fdh60p57jmkkt5', '2025-09-13 14:50:58'),
+(17, 'user_1757757067', '4', 'All of the above', 'cl08huk9piq4fdh60p57jmkkt5', '2025-09-13 14:50:58');
 
 --
 -- Indexes for dumped tables
@@ -146,15 +202,21 @@ ALTER TABLE `playlists`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `playlist_audio`
+-- Indexes for table `playlist_audios`
 --
-ALTER TABLE `playlist_audio`
+ALTER TABLE `playlist_audios`
   ADD PRIMARY KEY (`id`);
 
 --
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `user_answers`
+--
+ALTER TABLE `user_answers`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -171,19 +233,25 @@ ALTER TABLE `contents`
 -- AUTO_INCREMENT for table `playlists`
 --
 ALTER TABLE `playlists`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
--- AUTO_INCREMENT for table `playlist_audio`
+-- AUTO_INCREMENT for table `playlist_audios`
 --
-ALTER TABLE `playlist_audio`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `playlist_audios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `user_answers`
+--
+ALTER TABLE `user_answers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
