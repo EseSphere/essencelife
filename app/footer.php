@@ -22,16 +22,18 @@
     <div id="currentSongInfo">
       <div class="player-controls">
         <div class="row w-100 align-items-center">
-          <div class="col-2">
+          <div class="col-3">
             <img id="currentSongImage" src="default.png" alt="Now Playing" style="width:50px; height:50px;">
           </div>
-          <div class="col-5 p-0 text-center">
+          <div class="col-7 p-0 text-center">
             <div id="currentSongTitle" style="cursor:pointer; text-decoration:underline;">Song Title</div>
             <input type="range" id="progressBar" value="0" min="0" max="100" step="0.1" style="width:100%;">
             <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
           </div>
-          <div class="col-5 p-0 flex justify-end items-end text-end">
+          <div class="col-2 p-0 flex justify-end items-end text-end">
             <button id="closePlayerBtn">✖</button>
+          </div>
+          <div class="col-12 p-0 flex justify-center items-center text-center">
             <p class="w-100 m-0">
               <button id="prevBtn">⏮️</button>
               <button id="playPauseBtn">▶️</button>

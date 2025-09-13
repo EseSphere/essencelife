@@ -1,7 +1,5 @@
 <?php
-// index.php
 require_once('header-panel.php');
-require_once('dbconnections.php');
 
 if (session_status() === PHP_SESSION_NONE) {
   session_start();
@@ -9,12 +7,12 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // Redirect already logged-in users
 if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-  header("Location: home.php"); // Default post-login page
+  header("Location: ./home");
   exit;
 }
 ?>
 
-<div class="section pt-5 text-center">
+<div style="margin-top: 15%;" class="section text-center">
   <div class="container-fluid">
     <div class="card-3d-wrap mx-auto">
       <div class="card-3d-wrapper">
@@ -60,31 +58,32 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
     alertContainer.innerHTML = '';
 
     try {
-      const response = await fetch('login.php', {
+      const response = await fetch('./login.php', {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
           'X-Requested-With': 'XMLHttpRequest'
         },
         body: formData
       });
 
+      // Read response as text first
+      const responseText = await response.text();
       let result;
+
       try {
-        result = await response.json();
+        result = JSON.parse(responseText);
       } catch (err) {
-        const text = await response.text();
-        alertContainer.innerHTML = `<div class="alert alert-danger">Unexpected server response: ${text}</div>`;
+        alertContainer.innerHTML = `<div class="alert alert-danger">Server returned invalid JSON: ${responseText}</div>`;
         return;
       }
 
-      // Display alert
+      // Show message
       const alertDiv = document.createElement('div');
       alertDiv.className = `alert alert-${result.success ? 'success' : 'danger'} alert-dismissible fade show`;
-      alertDiv.innerHTML = `${result.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+      alertDiv.innerHTML = `${result.message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
       alertContainer.appendChild(alertDiv);
 
-      // Redirect on success
+      // Redirect if successful
       if (result.success && result.redirect) {
         setTimeout(() => {
           window.location.href = result.redirect;
@@ -92,7 +91,7 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
       }
 
     } catch (error) {
-      alertContainer.innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
+      alertContainer.innerHTML = `<div class="alert alert-danger">Network error: ${error.message}</div>`;
     }
   });
 </script>

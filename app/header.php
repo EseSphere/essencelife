@@ -1,16 +1,21 @@
 <?php
 include 'dbconnections.php';
 
-// Fetch user info for profile picture
 $user_id = $_SESSION['user_id'] ?? null;
-$user = null;
+
+// Default fall profile image
+
 if ($user_id) {
   $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_assoc();
-  $profileImage = $user && !empty($user['image']) ? $user['image'] : './images/default.png';
-} else {
-  $profileImage = './images/default.png';
+
+  if ($user && !empty($user['image'])) {
+    // Filesystem path to check existence
+    $filePath = __DIR__ . 'uploads/users/' . $user['image'];
+    $profileImage = $user['image'];
+  }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -22,13 +27,13 @@ if ($user_id) {
   <meta name="keywords" content="Essence app, meditation, mindfulness, sleep stories, calming music, relaxation, stress relief, wellness">
   <meta name="author" content="Essence Team">
   <meta name="robots" content="index, follow">
-  <meta property="og:title" content="Essence – Calm, Meditate & Relax">
+  <meta property="og:title" content="Essence – Life, Meditate & Relax">
   <meta property="og:description" content="Discover inner calm with Essence. Guided meditations, soothing music, and sleep stories to improve focus and relaxation.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://www.essenceapp.com">
   <meta property="og:image" content="./images/logo/favicon.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Essence – Calm, Meditate & Relax">
+  <meta name="twitter:title" content="Essence – Life, Meditate & Relax">
   <meta name="twitter:description" content="Relax, sleep better, and focus with Essence. Guided meditations, calming music, and sleep stories.">
   <meta name="twitter:image" content="./images/logo/favicon.png">
   <link rel="stylesheet" href="./css/style2.css">
@@ -58,7 +63,7 @@ if ($user_id) {
           <!-- Profile Dropdown -->
           <div class="dropdown">
             <a href="#" class="d-block" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-              <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="rounded-circle" style="width:40px; height:40px; object-fit:cover; cursor:pointer;">
+              <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="rounded-circle" style="width:40px; height:40px; object-fit:cover; cursor:pointer;" onerror="this.onerror=null; this.src='./uploads/users/default.png';">
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
               <li><a class="dropdown-item" href="profile.php">Profile</a></li>

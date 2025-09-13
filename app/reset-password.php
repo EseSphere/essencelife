@@ -22,7 +22,7 @@
     }
 </style>
 
-<div class="section pt-5 text-center">
+<div style="margin-top: 15%;" class="section text-center">
     <div class="container-fluid">
         <div class="card-3d-wrap mx-auto">
             <div class="card-3d-wrapper">

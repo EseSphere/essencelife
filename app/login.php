@@ -1,96 +1,101 @@
 <?php
-// login.php
+ob_start(); // Start output buffering
+session_start();
 require_once('dbconnections.php');
-require_once('checkings.php');
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Suppress PHP warnings for JSON output
-error_reporting(E_ALL);
+// Disable PHP errors output
 ini_set('display_errors', 0);
+error_reporting(0);
 
-// Default JSON response
+// Force JSON response
+header('Content-Type: application/json; charset=utf-8');
+
+// Default response
 $response = ['success' => false, 'message' => 'Login failed.'];
 
-// Only accept POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Invalid request method.']);
-    exit;
-}
+try {
+    // Only accept POST
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        throw new Exception('Invalid request method.');
+    }
 
-// Get input
-$email = trim($_POST['logemail'] ?? '');
-$password = $_POST['logpass'] ?? '';
+    // Get input
+    $email = trim($_POST['logemail'] ?? '');
+    $password = $_POST['logpass'] ?? '';
 
-if ($email === '' || $password === '') {
-    echo json_encode(['success' => false, 'message' => 'Please enter both email and password.']);
-    exit;
-}
+    if ($email === '' || $password === '') {
+        throw new Exception('Please enter both email and password.');
+    }
 
-// Fetch user by email
-$stmt = $conn->prepare("SELECT id, user_id, name, password FROM users WHERE email = ? LIMIT 1");
-if (!$stmt) {
-    echo json_encode(['success' => false, 'message' => 'Database query failed.']);
-    exit;
-}
+    if (!$conn || $conn->connect_error) {
+        throw new Exception('Database connection failed.');
+    }
 
-$stmt->bind_param('s', $email);
-$stmt->execute();
-$stmt->store_result();
+    // Fetch user
+    $stmt = $conn->prepare("SELECT id, user_id, name, password FROM users WHERE email = ? LIMIT 1");
+    if (!$stmt) throw new Exception('Database query failed.');
 
-if ($stmt->num_rows === 0) {
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $stmt->store_result();
+
+    if ($stmt->num_rows === 0) {
+        throw new Exception('Email not found.');
+    }
+
+    $stmt->bind_result($id, $user_id, $name, $hashedPassword);
+    $stmt->fetch();
     $stmt->close();
-    echo json_encode(['success' => false, 'message' => 'Email not found.']);
-    exit;
+
+    // Verify password
+    if (!password_verify($password, $hashedPassword)) {
+        throw new Exception('Invalid password.');
+    }
+
+    // Successful login
+    session_regenerate_id(true);
+    $_SESSION['user_id'] = $user_id;
+    $_SESSION['name'] = $name;
+    $_SESSION['logged_in'] = true;
+
+    // Check user_answers
+    $stmtAns = $conn->prepare("SELECT COUNT(*) FROM user_answers WHERE user_id = ?");
+    $stmtAns->bind_param('s', $user_id);
+    $stmtAns->execute();
+    $stmtAns->bind_result($answered_count);
+    $stmtAns->fetch();
+    $stmtAns->close();
+
+    if ($answered_count == 0) {
+        // No answers → go to questionnaire
+        $redirectUrl = 'questionnaire.php';
+    } else {
+        // Answers exist → check payments
+        $stmtPay = $conn->prepare("SELECT COUNT(*) FROM user_payments WHERE user_id = ? AND status = 'Paid'");
+        $stmtPay->bind_param('s', $user_id);
+        $stmtPay->execute();
+        $stmtPay->bind_result($payment_count);
+        $stmtPay->fetch();
+        $stmtPay->close();
+
+        if ($payment_count == 0) {
+            $redirectUrl = 'payment.php';
+        } else {
+            $redirectUrl = 'home.php';
+        }
+    }
+
+    $response = [
+        'success' => true,
+        'message' => 'Login successful! Redirecting...',
+        'redirect' => $redirectUrl
+    ];
+} catch (Exception $e) {
+    $response['message'] = $e->getMessage();
 }
 
-$stmt->bind_result($id, $user_id, $name, $hashedPassword);
-$stmt->fetch();
-$stmt->close();
-
-// Verify password
-if (!password_verify($password, $hashedPassword) && $password !== $hashedPassword) {
-    echo json_encode(['success' => false, 'message' => 'Invalid password.']);
-    exit;
-}
-
-// Successful login: regenerate session
-session_regenerate_id(true);
-$_SESSION['user_id'] = $user_id;
-$_SESSION['name'] = $name;
-$_SESSION['logged_in'] = true;
-
-// Combined check for answers and payment
-$stmtCheck = $conn->prepare("
-    SELECT 
-        (SELECT COUNT(*) FROM user_answers WHERE user_id = ?) AS answered_count,
-        (SELECT COUNT(*) FROM user_payments WHERE user_id = ? AND status = 'completed') AS payment_count
-");
-$stmtCheck->bind_param('ss', $user_id, $user_id);
-$stmtCheck->execute();
-$stmtCheck->bind_result($answered_count, $payment_count);
-$stmtCheck->fetch();
-$stmtCheck->close();
-
-// Decide redirect
-if ($payment_count == 0) {
-    $redirectUrl = 'payment.php';
-} elseif ($answered_count == 0) {
-    $redirectUrl = 'questionnaires.php';
-} else {
-    $redirectUrl = 'home.php';
-}
-
-// Send JSON response
-header('Content-Type: application/json; charset=utf-8');
-echo json_encode([
-    'success' => true,
-    'message' => 'Login successful! Redirecting...',
-    'redirect' => $redirectUrl
-]);
-
+// Send JSON
+echo json_encode($response);
+ob_end_flush(); // Ensure no other output
 $conn->close();
 exit;
