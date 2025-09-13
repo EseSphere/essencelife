@@ -16,6 +16,10 @@
     .alert-container {
         margin-bottom: 1rem;
     }
+
+    .is-invalid {
+        border-color: #dc3545;
+    }
 </style>
 
 <div class="section pt-5 text-center">
@@ -36,7 +40,10 @@
                                     <i class="input-icon uil uil-at"></i>
                                 </div>
                                 <div class="form-group mt-2">
-                                    <button type="submit" id="btnSubmitForm" class="action-btn mt-3"><i class="bi bi-sign-in"></i> Continue</button>
+                                    <button type="submit" id="btnSubmitForm" class="action-btn mt-3">
+                                        <span id="btnText"><i class="bi bi-sign-in"></i> Continue</span>
+                                        <span id="btnLoader" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    </button>
                                 </div>
                                 <div class="form-group mt-2 w-100 flex justify-start items-start text-start">
                                     <p class="mb-0 mt-4 text-left"><a href="./" class="link">Remember password? Login</a></p>
@@ -51,90 +58,59 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('submitForm');
+    document.getElementById('submitForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const form = this;
+        const submitBtn = document.getElementById('btnSubmitForm');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
         const alertContainer = document.getElementById('alertContainer');
-        let db;
 
-        // Open existing IndexedDB
-        const request = indexedDB.open('essence_life');
+        // Reset invalid field
+        form.logemail.classList.remove('is-invalid');
 
-        request.onsuccess = function(event) {
-            db = event.target.result;
-        };
+        // Validate email
+        const email = form.logemail.value.trim();
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailPattern.test(email)) {
+            showAlert('danger', 'Please enter a valid email.');
+            form.logemail.classList.add('is-invalid');
+            return;
+        }
 
-        request.onerror = function(event) {
-            showAlert('Database error: ' + event.target.errorCode, 'danger');
-        };
+        // Show loader
+        btnText.classList.add('d-none');
+        btnLoader.classList.remove('d-none');
+        submitBtn.disabled = true;
 
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = document.getElementById('logemail').value.trim();
+        const formData = new FormData(form);
 
-            if (!db) {
-                showAlert('Database not ready. Please try again.', 'danger');
-                return;
-            }
+        fetch('reset-password-handler.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                showAlert(data.status, data.message);
+            })
+            .catch(err => {
+                console.error('Error:', err);
+                showAlert('danger', 'Something went wrong. Please try again.');
+            })
+            .finally(() => {
+                btnText.classList.remove('d-none');
+                btnLoader.classList.add('d-none');
+                submitBtn.disabled = false;
+            });
 
-            const transaction = db.transaction(['users'], 'readonly');
-            const objectStore = transaction.objectStore('users');
-
-            // Use email index if exists
-            if (objectStore.indexNames.contains('email')) {
-                const index = objectStore.index('email');
-                const getRequest = index.get(email);
-
-                getRequest.onsuccess = function() {
-                    const user = getRequest.result;
-                    if (user) {
-                        // Save email in sessionStorage for new-password page
-                        sessionStorage.setItem('resetEmail', email);
-                        window.location.href = 'new-password.php';
-                    } else {
-                        showAlert('Email not found.', 'danger');
-                    }
-                };
-
-                getRequest.onerror = function() {
-                    showAlert('Error accessing user data.', 'danger');
-                };
-            } else {
-                // Fallback: scan all users
-                const cursorRequest = objectStore.openCursor();
-                let found = false;
-
-                cursorRequest.onsuccess = function(event) {
-                    const cursor = event.target.result;
-                    if (cursor) {
-                        const user = cursor.value;
-                        if (user.email === email) {
-                            found = true;
-                            sessionStorage.setItem('resetEmail', email);
-                            window.location.href = 'new-password.php';
-                            return;
-                        }
-                        cursor.continue();
-                    } else {
-                        if (!found) showAlert('Email not found.', 'danger');
-                    }
-                };
-
-                cursorRequest.onerror = function() {
-                    showAlert('Error scanning users.', 'danger');
-                };
-            }
-        });
-
-        function showAlert(message, type = 'success') {
-            alertContainer.innerHTML = '';
-            const alertDiv = document.createElement('div');
-            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-            alertDiv.role = 'alert';
-            alertDiv.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        function showAlert(type, message) {
+            alertContainer.innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
         `;
-            alertContainer.appendChild(alertDiv);
         }
     });
 </script>

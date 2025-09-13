@@ -16,6 +16,10 @@
     .alert-container {
         margin-bottom: 1rem;
     }
+
+    .is-invalid {
+        border-color: #dc3545;
+    }
 </style>
 
 <div class="section pt-5 text-center">
@@ -40,7 +44,10 @@
                                     <i class="input-icon uil uil-lock-alt"></i>
                                 </div>
                                 <div class="form-group mt-2">
-                                    <button type="submit" id="btnSubmitForm" class="action-btn mt-3"><i class="bi bi-sign-in"></i> Update Password</button>
+                                    <button type="submit" id="btnSubmitForm" class="action-btn mt-3">
+                                        <span id="btnText"><i class="bi bi-sign-in"></i> Update Password</span>
+                                        <span id="btnLoader" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    </button>
                                 </div>
                                 <div class="form-group mt-2 w-100 flex justify-start items-start text-start">
                                     <p class="mb-0 mt-4 text-left"><a href="./" class="link">Have account? Login</a></p>
@@ -58,101 +65,75 @@
     document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('submitForm');
         const alertContainer = document.getElementById('alertContainer');
-        let db;
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
 
-        // Get email from sessionStorage
-        const email = sessionStorage.getItem('resetEmail');
-        if (!email) {
-            showAlert('No email found. Please start password reset again.', 'danger');
+        if (!token) {
+            showAlert('Invalid or missing token.', 'danger');
+            form.querySelectorAll('input, button').forEach(el => el.disabled = true);
             return;
         }
 
-        const request = indexedDB.open('essence_life');
-
-        request.onsuccess = function(event) {
-            db = event.target.result;
-        };
-
-        request.onerror = function(event) {
-            showAlert('Database error: ' + event.target.errorCode, 'danger');
-        };
-
         form.addEventListener('submit', function(e) {
             e.preventDefault();
+
             const password = document.getElementById('logpass').value.trim();
             const confirmPassword = document.getElementById('logcpass').value.trim();
+            const submitBtn = document.getElementById('btnSubmitForm');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
 
+            // Reset invalid fields
+            document.getElementById('logpass').classList.remove('is-invalid');
+            document.getElementById('logcpass').classList.remove('is-invalid');
+
+            // Client-side validation
+            const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
             if (password !== confirmPassword) {
                 showAlert('Passwords do not match.', 'danger');
+                document.getElementById('logpass').classList.add('is-invalid');
+                document.getElementById('logcpass').classList.add('is-invalid');
                 return;
             }
 
-            if (!db) {
-                showAlert('Database not ready. Please try again.', 'danger');
+            if (!passwordPattern.test(password)) {
+                showAlert('Password must be strong (8+ chars, upper/lower, number, special)', 'danger');
+                document.getElementById('logpass').classList.add('is-invalid');
                 return;
             }
 
-            const transaction = db.transaction(['users'], 'readwrite');
-            const objectStore = transaction.objectStore('users');
+            // Show loader
+            btnText.classList.add('d-none');
+            btnLoader.classList.remove('d-none');
+            submitBtn.disabled = true;
 
-            // Use index if exists
-            const updatePassword = (user) => {
-                user.password = btoa(password); // encode password
-                const updateRequest = objectStore.put(user);
+            const formData = new FormData();
+            formData.append('token', token);
+            formData.append('password', password);
 
-                updateRequest.onsuccess = () => {
-                    showAlert('Password updated successfully!', 'success');
-                    sessionStorage.removeItem('resetEmail');
-                    setTimeout(() => {
-                        window.location.href = './';
-                    }, 2000); // redirect to login after 2 seconds
-                };
-
-                updateRequest.onerror = () => {
-                    showAlert('Failed to update password.', 'danger');
-                };
-            };
-
-            if (objectStore.indexNames.contains('email')) {
-                const index = objectStore.index('email');
-                const getRequest = index.get(email);
-
-                getRequest.onsuccess = function() {
-                    const user = getRequest.result;
-                    if (user) {
-                        updatePassword(user);
-                    } else {
-                        showAlert('Email not found.', 'danger');
+            fetch('new-password-handler.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    showAlert(data.status, data.message);
+                    if (data.status === 'success') {
+                        form.reset();
+                        setTimeout(() => {
+                            window.location.href = './';
+                        }, 2000);
                     }
-                };
-
-                getRequest.onerror = function() {
-                    showAlert('Error accessing user data.', 'danger');
-                };
-            } else {
-                // fallback: scan all users
-                const cursorRequest = objectStore.openCursor();
-                let found = false;
-
-                cursorRequest.onsuccess = function(event) {
-                    const cursor = event.target.result;
-                    if (cursor) {
-                        const user = cursor.value;
-                        if (user.email === email) {
-                            found = true;
-                            updatePassword(user);
-                            return;
-                        }
-                        cursor.continue();
-                    } else {
-                        if (!found) showAlert('Email not found.', 'danger');
-                    }
-                };
-
-                cursorRequest.onerror = function() {
-                    showAlert('Error scanning users.', 'danger');
-                };
-            }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showAlert('Something went wrong. Please try again.', 'danger');
+                })
+                .finally(() => {
+                    btnText.classList.remove('d-none');
+                    btnLoader.classList.add('d-none');
+                    submitBtn.disabled = false;
+                });
         });
 
         function showAlert(message, type = 'success') {
