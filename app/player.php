@@ -1,12 +1,8 @@
-<?php
-include 'header.php';
-include 'dbconnections.php';
-?>
+<?php include 'header.php'; ?>
 
 <link rel="stylesheet" href="./css/player_style.css">
 
-<div class="container">
-
+<div class="container-fluid">
     <!-- Compact Main Player -->
     <div id="card-bg" class="card text-white shadow-lg border-0" style="border-radius: 20px; overflow: hidden;">
         <div class="row g-0 align-items-center">
@@ -73,8 +69,6 @@ include 'dbconnections.php';
     </div>
 
 </div>
-
-<?php include 'footer.php'; ?>
 
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 <script>
@@ -156,3 +150,5 @@ include 'dbconnections.php';
         loadAudio(initId);
     });
 </script>
+
+<?php include 'footer.php'; ?>

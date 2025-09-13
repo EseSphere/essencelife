@@ -19,6 +19,19 @@ if ($user_id) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Essence – Life, Meditate & Relax</title>
+  <meta name="description" content="Essence helps you find peace and relaxation with guided meditations, sleep stories, calming music, and mindfulness exercises.">
+  <meta name="keywords" content="Essence app, meditation, mindfulness, sleep stories, calming music, relaxation, stress relief, wellness">
+  <meta name="author" content="Essence Team">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="Essence – Life, Meditate & Relax">
+  <meta property="og:description" content="Discover inner calm with Essence. Guided meditations, soothing music, and sleep stories to improve focus and relaxation.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://www.essenceapp.com">
+  <meta property="og:image" content="./images/logo/favicon.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Essence – Life, Meditate & Relax">
+  <meta name="twitter:description" content="Relax, sleep better, and focus with Essence. Guided meditations, calming music, and sleep stories.">
+  <meta name="twitter:image" content="./images/logo/favicon.png">
   <link rel="stylesheet" href="./css/style2.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
