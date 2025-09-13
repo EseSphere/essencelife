@@ -1,4 +1,16 @@
-<?php include 'dbconnections.php'; ?>
+<?php
+include 'dbconnections.php';
+
+// Fetch user info for profile picture
+$user_id = $_SESSION['user_id'] ?? null;
+$user = null;
+if ($user_id) {
+  $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_assoc();
+  $profileImage = $user && !empty($user['image']) ? $user['image'] : './images/default.png';
+} else {
+  $profileImage = './images/default.png';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -32,7 +44,7 @@
   <!-- Navbar -->
   <nav style="background-color: #001F54;" class="navbar navbar-expand-lg fixed-top">
     <div class="container">
-      <div class="row w-100">
+      <div class="row w-100 align-items-center">
         <div class="col-md-2 col-2">
           <a class="navbar-brand" href="./index">
             <img src="./images/logo/favicon.png" alt="Essence Life Logo" style="height: 40px;">
@@ -42,12 +54,25 @@
         <div class="col-md-3 col-8">
           <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="🔍 Search...">
         </div>
-        <div class="col-md-1 col-1">
-          <i style="color: rgba(189, 195, 199,.8);" class="bi bi-gear fs-2"></i>
+        <div class="col-md-1 col-1 text-end">
+          <!-- Profile Dropdown -->
+          <div class="dropdown">
+            <a href="#" class="d-block" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+              <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="rounded-circle" style="width:40px; height:40px; object-fit:cover; cursor:pointer;">
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+              <li><a class="dropdown-item" href="profile.php">Profile</a></li>
+              <li>
+                <hr class="dropdown-divider">
+              </li>
+              <li><a class="dropdown-item" href="logout.php">Logout</a></li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
   </nav>
+
   <!-- Hero Wrapper -->
   <div class="wrapper" id="hero">
     <div class="particle"></div>

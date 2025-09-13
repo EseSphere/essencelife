@@ -40,7 +40,7 @@ if (!$conn->set_charset('utf8mb4')) {
 }
 
 $sTime = date('H:i');
-$CompanyName = 'Geosoft Care | For home and community care';
+$CompanyName = 'Essence Life | For home and community care';
 $today = date('Y-m-d');
 $tomorrow = (new DateTime('tomorrow'))->format('Y-m-d');
 $currentDate = date('F j, Y');
@@ -52,3 +52,12 @@ try {
 }
 $encrypt = uniqid('', true);
 $crackEncryptedbinary = $encrypted . '-' . $encrypt;
+
+/**
+ * SESSION CHECK
+ * Redirect user to ../index if session is not set or user_id is missing
+ */
+//if (isset($_SESSION['logged_in']) || $_SESSION['logged_in'] == true || !$user_id) {
+   // header('Location: ./checkings');
+   // exit;
+//}

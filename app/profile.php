@@ -9,8 +9,6 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-
-// Fetch user data
 $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_assoc();
 ?>
 
@@ -22,6 +20,7 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
         background-color: rgba(64, 115, 158, 0.1);
         padding: 20px;
         color: white;
+        text-align: center;
     }
 
     .profile-card img {
@@ -41,18 +40,40 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
     #ajaxMessage .alert {
         margin-bottom: 15px;
     }
+
+    .custom-file-btn {
+        display: inline-block;
+        padding: 6px 12px;
+        cursor: pointer;
+        background-color: #40739e;
+        color: white;
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+
+    .custom-file-btn:hover {
+        background-color: #365d7d;
+    }
+
+    .section-divider {
+        height: 1px;
+        background-color: #40739e;
+        margin: 30px 0;
+    }
 </style>
 
 <div class="container-fluid">
-    <div id="card-bg" class="card flex justify-start items-start text-start shadow-lg border-rounded p-4 mb-4">
+    <div id="card-bg" class="card text-white flex justify-start items-start text-start shadow-lg border-rounded p-4 mb-4">
         <h4 class="fw-bold">My Profile</h4>
         <p class="fs-6">View or update your profile details here.</p>
     </div>
 
     <div id="ajaxMessage"></div>
 
-    <div class="profile-card text-center">
-        <img id="profileImage" src="<?= htmlspecialchars($user['image'] ?: 'default_profile.png') ?>" alt="Profile Image">
+    <div class="profile-card">
+        <img id="profileImage" src="<?= htmlspecialchars($user['image'] ?: 'default.png') ?>" alt="Profile Image">
+
+        <!-- Profile Update Form -->
         <form id="updateProfileForm" enctype="multipart/form-data">
             <div class="mb-3">
                 <input type="text" name="name" class="form-control" placeholder="Name" value="<?= htmlspecialchars($user['name']) ?>" required>
@@ -63,10 +84,31 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
             <div class="mb-3">
                 <input type="text" name="phone" class="form-control" placeholder="Phone" value="<?= htmlspecialchars($user['phone']) ?>" required>
             </div>
-            <div class="mb-3">
-                <input type="file" name="image" class="form-control">
-            </div>
+
+            <!-- Custom File Upload Button -->
+            <label class="custom-file-btn">
+                Choose Profile Image
+                <input type="file" name="image" style="display:none;" id="profileFileInput">
+            </label>
+            <br>
             <button type="submit" class="btn btn-success">Update Profile</button>
+        </form>
+
+        <div class="section-divider"></div>
+
+        <!-- Change Password Form -->
+        <form id="changePasswordForm">
+            <h5 class="mb-3">Change Password</h5>
+            <div class="mb-3">
+                <input type="password" name="current_password" class="form-control" placeholder="Current Password" required>
+            </div>
+            <div class="mb-3">
+                <input type="password" name="new_password" class="form-control" placeholder="New Password" required>
+            </div>
+            <div class="mb-3">
+                <input type="password" name="confirm_password" class="form-control" placeholder="Confirm New Password" required>
+            </div>
+            <button type="submit" class="btn btn-warning">Change Password</button>
         </form>
     </div>
 </div>
@@ -75,18 +117,33 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('updateProfileForm');
+        const updateForm = document.getElementById('updateProfileForm');
+        const passwordForm = document.getElementById('changePasswordForm');
         const messageDiv = document.getElementById('ajaxMessage');
         const profileImage = document.getElementById('profileImage');
+        const profileFileInput = document.getElementById('profileFileInput');
 
         function showMessage(text, type = 'success') {
             messageDiv.innerHTML = `<div class="alert alert-${type}">${text}</div>`;
-            setTimeout(() => messageDiv.innerHTML = '', 3000);
+            setTimeout(() => messageDiv.innerHTML = '', 4000);
         }
 
-        form.addEventListener('submit', function(e) {
+        // Live preview of selected image
+        profileFileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    profileImage.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // AJAX Profile Update
+        updateForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const formData = new FormData(form);
+            const formData = new FormData(updateForm);
 
             fetch('profile_actions.php', {
                     method: 'POST',
@@ -95,13 +152,35 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === 'success') {
-                        if (data.image) profileImage.src = data.image; // Update profile image
+                        if (data.image) profileImage.src = data.image;
                         showMessage('Profile updated successfully!', 'success');
                     } else {
                         showMessage(data.message, 'danger');
                     }
                 })
-                .catch(err => showMessage('An error occurred.', 'danger'));
+                .catch(() => showMessage('An error occurred.', 'danger'));
+        });
+
+        // AJAX Change Password
+        passwordForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(passwordForm);
+            formData.append('action', 'change_password');
+
+            fetch('profile_actions.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        passwordForm.reset();
+                        showMessage('Password changed successfully!', 'success');
+                    } else {
+                        showMessage(data.message, 'danger');
+                    }
+                })
+                .catch(() => showMessage('An error occurred.', 'danger'));
         });
     });
 </script>

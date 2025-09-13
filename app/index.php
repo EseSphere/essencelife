@@ -3,8 +3,13 @@
 require_once('header-panel.php');
 require_once('dbconnections.php');
 
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
+
+// Redirect already logged-in users
 if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-  header("Location: ./questionnaire");
+  header("Location: home.php"); // Default post-login page
   exit;
 }
 ?>
@@ -18,7 +23,7 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
             <div class="section text-center">
               <h4 class="mb-4 pb-3 text-white">Log In</h4>
               <div id="alertContainer" class="alert-container"></div>
-              <form id="submitForm" method="POST" action="login.php" autocomplete="off">
+              <form id="submitForm" method="POST" autocomplete="off">
                 <div class="form-group">
                   <input type="email" required name="logemail" class="form-style" placeholder="Email" id="logemail">
                 </div>
@@ -36,7 +41,7 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
                   <p class="mt-4"><a href="./reset-password" class="link">Forgot password?</a></p>
                 </div>
                 <div class="col-6">
-                  <p class="mt-4"><a href="./signup" class="link">Don't have account?</a></p>
+                  <p class="mt-4"><a href="./signup" class="link">Don't have an account?</a></p>
                 </div>
               </div>
             </div>
@@ -51,6 +56,9 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
   document.getElementById('submitForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const formData = new FormData(this);
+    const alertContainer = document.getElementById('alertContainer');
+    alertContainer.innerHTML = '';
+
     try {
       const response = await fetch('login.php', {
         method: 'POST',
@@ -60,27 +68,31 @@ if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
         },
         body: formData
       });
+
       let result;
       try {
         result = await response.json();
       } catch (err) {
         const text = await response.text();
-        document.getElementById('alertContainer').innerHTML = `<div class="alert alert-danger">Unexpected server response: ${text}</div>`;
+        alertContainer.innerHTML = `<div class="alert alert-danger">Unexpected server response: ${text}</div>`;
         return;
       }
-      const alertContainer = document.getElementById('alertContainer');
-      alertContainer.innerHTML = '';
-      let alertDiv = document.createElement('div');
+
+      // Display alert
+      const alertDiv = document.createElement('div');
       alertDiv.className = `alert alert-${result.success ? 'success' : 'danger'} alert-dismissible fade show`;
       alertDiv.innerHTML = `${result.message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
       alertContainer.appendChild(alertDiv);
-      if (result.success) {
+
+      // Redirect on success
+      if (result.success && result.redirect) {
         setTimeout(() => {
-          window.location.href = "question.php";
+          window.location.href = result.redirect;
         }, 800);
       }
+
     } catch (error) {
-      document.getElementById('alertContainer').innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
+      alertContainer.innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
     }
   });
 </script>
