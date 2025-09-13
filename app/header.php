@@ -40,7 +40,7 @@
         </div>
         <div class="col-md-6 col-1"></div>
         <div class="col-md-3 col-8">
-          <input type="text" id="searchBar" class="form-control form-control-lg" placeholder="🔍 Search...">
+          <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="🔍 Search...">
         </div>
         <div class="col-md-1 col-1">
           <i style="color: rgba(189, 195, 199,.8);" class="bi bi-gear fs-2"></i>

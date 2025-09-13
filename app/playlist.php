@@ -1,316 +1,190 @@
-<?php include 'header.php'; ?>
+<?php
+session_start();
+include 'header.php';
+include 'dbconnections.php'; // mysqli connection
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+$user_id = $_SESSION['user_id'];
+?>
 
 <link rel="stylesheet" href="./css/playlist_style.css">
+
+<style>
+    input::placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+    }
+
+    input.form-control {
+        background-color: rgba(64, 115, 158, 1.0) !important;
+        color: white !important;
+        border: 1px solid #40739e !important;
+    }
+
+    .playlist-card:hover {
+        cursor: pointer;
+        background-color: rgba(64, 115, 158, 0.2);
+        transform: scale(1.02);
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .playlist-count {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    /* Inline AJAX message styling */
+    #ajaxMessage .alert {
+        margin-bottom: 15px;
+    }
+
+    /* Make left side fully clickable */
+    .playlist-card a.flex-grow-1:hover {
+        text-decoration: none;
+        color: inherit;
+    }
+</style>
+
 <div class="container-fluid">
+    <!-- Playlist Header -->
     <div id="card-bg" class="card flex text-white justify-start items-start p-3 text-start shadow-lg border-rounded mb-4">
         <div class="text-center">
             <h4 class="fw-bold">Playlists</h4>
-            <p>Create and manage your favorite playlists</p>
+            <p class="fs-6">Create and manage your favorite playlists to organize your audios efficiently.</p>
         </div>
 
-        <!-- Create Playlist -->
-        <form id="createPlaylistForm" class="d-flex gap-2 mb-4">
-            <input id="createPlaylistInput" type="text" name="playlist_name" class="form-control" placeholder="New Playlist" required>
+        <!-- AJAX Messages -->
+        <div id="ajaxMessage"></div>
+
+        <!-- Create Playlist Form -->
+        <form id="createPlaylistForm" class="d-flex gap-2 mb-3">
+            <input type="text" id="playlist_name" class="form-control" placeholder="New Playlist" required>
             <button type="submit" class="btn btn-success">Create</button>
         </form>
     </div>
 
-    <!-- Playlists -->
-    <div id="playlistContainer" class="row g-2 mt-3"></div>
-
-    <hr class="text-white">
-
-    <!-- All Audios Carousel -->
-    <div id="card-bg" class="d-flex alert justify-content-between p-3 align-items-center mb-2">
-        <h5>All Audios</h5>
-        <input type="text" id="audioSearch" class="form-control w-auto" placeholder="Search...">
-    </div>
-    <div class="audio-carousel-wrapper position-relative">
-        <button class="carousel-btn prev-btn"><i class="bi bi-chevron-left"></i></button>
-        <div id="audioLibrary" class="audio-carousel d-flex gap-3 overflow-auto py-2"></div>
-        <button class="carousel-btn next-btn"><i class="bi bi-chevron-right"></i></button>
+    <!-- Playlist List -->
+    <div id="playlistContainer" class="row g-2 mt-3">
+        <!-- Playlists will load here via AJAX -->
     </div>
 
-    <!-- Description Info -->
+    <div id="card-bg" class="card flex text-white justify-start items-start p-3 text-start shadow-lg border-rounded mt-5 mb-4">
+        <h4 class="fw-bold">Info</h4>
+        <ul class="fs-6" style="color: rgba(255,255,255,0.8);">
+            <li>Click on a playlist to view or add audios.</li>
+            <li>Create new playlists for different moods or categories.</li>
+            <li>Delete playlists you no longer need.</li>
+            <li>See the number of audios in each playlist at a glance.</li>
+        </ul>
+        <p>Use the search bar below to quickly find a playlist by name.</p>
+    </div>
+
     <div class="card flex justify-start alert alert-success items-start p-2 text-start mb-4 mt-5 shadow-lg border-rounded">
         <h4 class="font-weight-bold">Essence – Life, Meditate & Relax</h4>
         <hr>
-        <p class="lead fs-6">Discover inner peace with guided meditations, calming music, and sleep stories.</p>
+        <p class="lead fs-6 fw-bold">Discover inner peace with guided meditations, calming music, and sleep stories.</p>
     </div>
 </div>
 
-<?php include 'footer.php'; ?>
-
 <script>
-    document.addEventListener("DOMContentLoaded", async () => {
-        const playlistContainer = document.getElementById("playlistContainer");
-        const audioLibrary = document.getElementById("audioLibrary");
-        const audioSearch = document.getElementById("audioSearch");
-        const createPlaylistForm = document.getElementById("createPlaylistForm");
-        const createPlaylistInput = document.getElementById("createPlaylistInput");
+    document.addEventListener('DOMContentLoaded', function() {
+        const container = document.getElementById('playlistContainer');
+        const messageDiv = document.getElementById('ajaxMessage');
 
-        // ---------- IndexedDB Setup ----------
-        const dbPromise = new Promise((resolve, reject) => {
-            const request = indexedDB.open("essence_life", 1);
-            request.onupgradeneeded = e => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains("playlists")) {
-                    db.createObjectStore("playlists", {
-                        keyPath: "id",
-                        autoIncrement: true
-                    });
-                }
-                if (!db.objectStoreNames.contains("contents")) {
-                    db.createObjectStore("contents", {
-                        keyPath: "id",
-                        autoIncrement: true
-                    });
-                }
-                if (!db.objectStoreNames.contains("playlist_audios")) {
-                    db.createObjectStore("playlist_audios", {
-                        keyPath: "id",
-                        autoIncrement: true
-                    });
-                }
-            };
-            request.onsuccess = e => resolve(e.target.result);
-            request.onerror = e => reject(e.target.error);
-        });
-
-        // ---------- Helper Functions ----------
-        async function addPlaylist(name) {
-            const db = await dbPromise;
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction("playlists", "readwrite");
-                const store = tx.objectStore("playlists");
-                const req = store.add({
-                    name
-                });
-                req.onsuccess = e => resolve(e.target.result);
-                req.onerror = e => reject(e.target.error);
-            });
+        function showMessage(text, type = 'success') {
+            messageDiv.innerHTML = `<div class="alert alert-${type}">${text}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 3000);
         }
 
-        async function getAllPlaylists() {
-            const db = await dbPromise;
-            return new Promise(resolve => {
-                const tx = db.transaction("playlists", "readonly");
-                const store = tx.objectStore("playlists");
-                const req = store.getAll();
-                req.onsuccess = e => resolve(e.target.result);
-            });
-        }
-
-        async function deletePlaylist(id) {
-            const db = await dbPromise;
-            return new Promise(resolve => {
-                const tx = db.transaction("playlists", "readwrite");
-                const store = tx.objectStore("playlists");
-                store.delete(id);
-                tx.oncomplete = () => resolve();
-            });
-        }
-
-        async function getAllAudios() {
-            const db = await dbPromise;
-            return new Promise(resolve => {
-                const tx = db.transaction("contents", "readonly");
-                const store = tx.objectStore("contents");
-                const req = store.getAll();
-                req.onsuccess = e => resolve(e.target.result);
-            });
-        }
-
-        async function getPlaylistAudios(playlistId) {
-            const db = await dbPromise;
-            return new Promise(resolve => {
-                const tx = db.transaction("playlist_audios", "readonly");
-                const store = tx.objectStore("playlist_audios");
-                const req = store.getAll();
-                req.onsuccess = e => {
-                    const all = e.target.result;
-                    resolve(all.filter(pa => pa.playlist_id === playlistId));
-                };
-            });
-        }
-
-        async function addAudioToPlaylist(playlistId, audioId) {
-            const db = await dbPromise;
-            return new Promise(resolve => {
-                const tx = db.transaction("playlist_audios", "readwrite");
-                const store = tx.objectStore("playlist_audios");
-
-                // Prevent duplicates
-                const getAllReq = store.getAll();
-                getAllReq.onsuccess = e => {
-                    const all = e.target.result;
-                    const exists = all.find(pa => pa.playlist_id === playlistId && pa.audio_id === audioId);
-                    if (!exists) {
-                        store.add({
-                            playlist_id: playlistId,
-                            audio_id: audioId
+        function loadPlaylists() {
+            fetch('playlist_actions.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        action: 'list'
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    container.innerHTML = '';
+                    if (data.status === 'success' && data.playlists.length) {
+                        data.playlists.forEach(pl => {
+                            const div = document.createElement('div');
+                            div.className = 'col-md-4 col-12';
+                            div.innerHTML = `
+                        <div class="playlist-card shadow-lg p-3 d-flex justify-content-between align-items-center" style="border:1px solid #40739e;">
+                            <a href="playlist-details.php?playlist_id=${pl.id}" class="text-white text-decoration-none flex-grow-1 me-2 d-flex align-items-center">
+                                <div>
+                                    <h6 class="mb-1">${pl.name}</h6>
+                                    <span class="playlist-count">${pl.audio_count} audio(s)</span>
+                                </div>
+                            </a>
+                            <button class="btn btn-sm btn-danger delete-btn" data-id="${pl.id}"><i class="bi bi-trash"></i></button>
+                        </div>`;
+                            container.appendChild(div);
                         });
-                    }
-                };
-
-                tx.oncomplete = () => resolve();
-            });
-        }
-
-        async function removeAudioFromPlaylist(id) {
-            const db = await dbPromise;
-            return new Promise(resolve => {
-                const tx = db.transaction("playlist_audios", "readwrite");
-                const store = tx.objectStore("playlist_audios");
-                store.delete(id);
-                tx.oncomplete = () => resolve();
-            });
-        }
-
-        // ---------- Render Functions ----------
-        async function renderPlaylists() {
-            const playlists = await getAllPlaylists();
-            playlistContainer.innerHTML = '';
-            playlists.forEach(pl => {
-                const col = document.createElement("div");
-                col.className = "col-md-4 col-12";
-                const card = document.createElement("div");
-                card.className = "playlist-card shadow-lg p-3";
-                card.style.border = "1px solid #40739e";
-                card.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">${pl.name}</h6>
-                    <button class="btn btn-sm btn-danger remove-btn"><i class="bi bi-trash"></i></button>
-                </div>
-                <div class="playlist-audios mt-3"></div>
-            `;
-
-                card.querySelector(".remove-btn").addEventListener("click", async e => {
-                    e.stopPropagation();
-                    if (!confirm("Delete this playlist?")) return;
-                    await deletePlaylist(pl.id);
-                    renderPlaylists();
-                });
-
-                card.addEventListener("click", async () => {
-                    localStorage.setItem("currentPlaylistId", pl.id);
-                    document.querySelectorAll(".playlist-card").forEach(c => c.classList.remove("active"));
-                    card.classList.add("active");
-                    await renderPlaylistAudios(pl.id, card.querySelector(".playlist-audios"));
-                });
-
-                col.appendChild(card);
-                playlistContainer.appendChild(col);
-            });
-        }
-
-        async function renderPlaylistAudios(playlistId, container) {
-            const audios = await getAllAudios();
-            const playlistAudios = await getPlaylistAudios(playlistId);
-            container.innerHTML = '';
-            playlistAudios.forEach(pa => {
-                const audio = audios.find(a => a.id === pa.audio_id);
-                if (!audio) return;
-                const div = document.createElement("div");
-                div.className = "d-flex justify-content-between align-items-center p-2 mb-2 bg-dark rounded text-white";
-                div.innerHTML = `<span>${audio.content_name}</span>
-                             <button class="btn btn-outline-danger btn-sm"><i class="bi bi-x"></i></button>`;
-                div.querySelector("button").addEventListener("click", async e => {
-                    e.stopPropagation();
-                    await removeAudioFromPlaylist(pa.id);
-                    await renderPlaylistAudios(playlistId, container);
-                });
-                container.appendChild(div);
-            });
-        }
-
-        async function renderAudios(filter = '') {
-            const audios = await getAllAudios();
-            const filtered = audios.filter(a => a.content_name.toLowerCase().includes(filter.toLowerCase()));
-            audioLibrary.innerHTML = '';
-            filtered.forEach(audio => {
-                const card = document.createElement("div");
-                card.className = "audio-card d-flex flex-column p-2 shadow-sm rounded text-white";
-                card.style.minWidth = "200px";
-                card.innerHTML = `
-                <div class="mb-2">
-                    <img src="${audio.image_url || 'default.png'}" class="w-100 rounded" style="height:120px; object-fit:cover;">
-                </div>
-                <div class="d-flex flex-column justify-content-between flex-grow-1">
-                    <h6 class="mb-1 text-white text-start">${audio.content_name}</h6>
-                    <p class="text-white-50 mb-2 text-start">${audio.content_type}</p>
-                    <button class="btn btn-success btn-sm align-self-start add-btn"><i class="bi bi-plus-lg"></i></button>
-                </div>
-            `;
-
-                card.querySelector(".add-btn").addEventListener("click", async () => {
-                    const playlistId = Number(localStorage.getItem("currentPlaylistId"));
-                    if (!playlistId) return alert("Select a playlist first!");
-                    await addAudioToPlaylist(playlistId, audio.id);
-                    await renderPlaylists();
-
-                    // Refresh audios inside the selected playlist
-                    const activeCard = document.querySelector(".playlist-card.active");
-                    if (activeCard) {
-                        await renderPlaylistAudios(playlistId, activeCard.querySelector(".playlist-audios"));
+                    } else {
+                        container.innerHTML = `<div class="col-12"><p class="text-white">No playlists found. Create one to get started!</p></div>`;
                     }
                 });
-
-                audioLibrary.appendChild(card);
-            });
         }
 
-        // ---------- Event Listeners ----------
-        createPlaylistForm.addEventListener("submit", async e => {
+        loadPlaylists();
+
+        // Create playlist
+        document.getElementById('createPlaylistForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            const name = createPlaylistInput.value.trim();
-            if (!name) return;
-            await addPlaylist(name);
-            createPlaylistInput.value = '';
-            await renderPlaylists();
+            const name = document.getElementById('playlist_name').value;
+            fetch('playlist_actions.php', {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        action: 'create',
+                        playlist_name: name
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        loadPlaylists();
+                        document.getElementById('playlist_name').value = '';
+                        showMessage(data.message, 'success');
+                    } else {
+                        showMessage(data.message, 'danger');
+                    }
+                });
         });
 
-        audioSearch.addEventListener("input", e => renderAudios(e.target.value));
-
-        // Carousel navigation
-        const prevBtn = document.querySelector(".prev-btn");
-        const nextBtn = document.querySelector(".next-btn");
-        prevBtn.addEventListener("click", () => audioLibrary.scrollBy({
-            left: -250,
-            behavior: 'smooth'
-        }));
-        nextBtn.addEventListener("click", () => audioLibrary.scrollBy({
-            left: 250,
-            behavior: 'smooth'
-        }));
-
-        // Drag to scroll
-        let isDown = false,
-            startX, scrollLeft;
-        audioLibrary.addEventListener("mousedown", e => {
-            isDown = true;
-            audioLibrary.classList.add("dragging");
-            startX = e.pageX - audioLibrary.offsetLeft;
-            scrollLeft = audioLibrary.scrollLeft;
+        // Delete playlist
+        container.addEventListener('click', function(e) {
+            if (e.target.closest('.delete-btn')) {
+                const btn = e.target.closest('.delete-btn');
+                const playlist_id = btn.dataset.id;
+                if (confirm('Are you sure you want to delete this playlist?')) {
+                    fetch('playlist_actions.php', {
+                            method: 'POST',
+                            body: new URLSearchParams({
+                                action: 'delete',
+                                playlist_id: playlist_id
+                            })
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                loadPlaylists();
+                                showMessage('Playlist deleted successfully!', 'success');
+                            } else {
+                                showMessage(data.message, 'danger');
+                            }
+                        });
+                }
+            }
         });
-        audioLibrary.addEventListener("mouseleave", () => {
-            isDown = false;
-            audioLibrary.classList.remove("dragging");
-        });
-        audioLibrary.addEventListener("mouseup", () => {
-            isDown = false;
-            audioLibrary.classList.remove("dragging");
-        });
-        audioLibrary.addEventListener("mousemove", e => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - audioLibrary.offsetLeft;
-            const walk = (x - startX) * 2;
-            audioLibrary.scrollLeft = scrollLeft - walk;
-        });
-
-        // Initial render
-        await renderPlaylists();
-        await renderAudios();
     });
 </script>
+
+<?php include 'footer.php'; ?>

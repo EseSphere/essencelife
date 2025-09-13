@@ -4,7 +4,7 @@ require_once('header-panel.php');
 require_once('dbconnections.php');
 
 if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
-  header("Location: ./question.php");
+  header("Location: ./questionnaire");
   exit;
 }
 ?>
