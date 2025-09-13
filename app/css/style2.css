@@ -1,4 +1,4 @@
-   body {
+ body {
         font-family: 'Poppins', sans-serif;
         margin: 0;
         scroll-behavior: smooth;
@@ -25,7 +25,6 @@
     .nav-link:hover {
         color: #198754 !important;
     }
-
 
     /* Header */
     .app-header {
@@ -364,5 +363,83 @@
         transform: scale(1.07);
         box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
     }
-    
-  
+
+    /* Recently Played Horizontal Row */
+    .recently-played-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    #recentlyPlayedContainer {
+        display: flex;
+        overflow-x: auto;
+        gap: 20px;
+        padding: 10px 40px;
+        /* space for arrows */
+        scroll-snap-type: x mandatory;
+    }
+
+    #recentlyPlayedContainer::-webkit-scrollbar {
+        display: none;
+    }
+
+    #recentlyPlayedContainer .song-info {
+        text-align: left;
+        padding: 5px 0;
+    }
+
+    #recentlyPlayedContainer .song-title {
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 4px;
+    }
+
+    #recentlyPlayedContainer .song-item.playing {
+    border: 2px solid #00bfff;
+    border-radius: 8px;
+    background-color: rgba(0,191,255,0.1);
+}
+
+    #recentlyPlayedContainer .song-type,
+    #recentlyPlayedContainer .song-description {
+        font-size: 0.85rem;
+        color: #dcdde1;
+        margin-bottom: 2px;
+    }
+
+    /* Scroll buttons */
+    .scroll-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.5);
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 10px;
+        border-radius: 50%;
+        transition: background 0.3s;
+    }
+
+    .scroll-btn:hover {
+        background: rgba(0, 0, 0, 0.8);
+    }
+
+    .left-btn {
+        left: 0;
+    }
+
+    .right-btn {
+        right: 0;
+    }
+
+    .badge-new {
+        font-size: 0.7rem;
+        vertical-align: middle;
+    }
+
+    #mainContent {
+    margin-top: 100px !important; /* adjust as needed */
+}

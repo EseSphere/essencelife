@@ -60,9 +60,13 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
         background-color: #40739e;
         margin: 30px 0;
     }
+
+    #profileFields {
+        height: 50px;
+    }
 </style>
 
-<div class="container-fluid">
+<div class="container-fluid mt-5">
     <div id="card-bg" class="card text-white flex justify-start items-start text-start shadow-lg border-rounded p-4 mb-4">
         <h4 class="fw-bold">My Profile</h4>
         <p class="fs-6">View or update your profile details here.</p>
@@ -76,22 +80,22 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
         <!-- Profile Update Form -->
         <form id="updateProfileForm" enctype="multipart/form-data">
             <div class="mb-3">
-                <input type="text" name="name" class="form-control" placeholder="Name" value="<?= htmlspecialchars($user['name']) ?>" required>
+                <input type="text" id="profileFields" name="name" class="form-control" placeholder="Name" value="<?= htmlspecialchars($user['name']) ?>" required>
             </div>
             <div class="mb-3">
-                <input type="email" name="email" class="form-control" placeholder="Email" value="<?= htmlspecialchars($user['email']) ?>" required>
+                <input type="email" id="profileFields" name="email" class="form-control" placeholder="Email" value="<?= htmlspecialchars($user['email']) ?>" required>
             </div>
             <div class="mb-3">
-                <input type="text" name="phone" class="form-control" placeholder="Phone" value="<?= htmlspecialchars($user['phone']) ?>" required>
+                <input type="text" id="profileFields" name="phone" class="form-control" placeholder="Phone" value="<?= htmlspecialchars($user['phone']) ?>" required>
             </div>
 
             <!-- Custom File Upload Button -->
             <label class="custom-file-btn">
-                Choose Profile Image
-                <input type="file" name="image" style="display:none;" id="profileFileInput">
+                Choose Image
+                <input type="file" id="profileFields" name="image" style="display:none;" id="profileFileInput">
             </label>
             <br>
-            <button type="submit" class="btn btn-success">Update Profile</button>
+            <button type="submit" id="profileFields" class="btn btn-success">Update Profile</button>
         </form>
 
         <div class="section-divider"></div>
@@ -100,20 +104,18 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
         <form id="changePasswordForm">
             <h5 class="mb-3">Change Password</h5>
             <div class="mb-3">
-                <input type="password" name="current_password" class="form-control" placeholder="Current Password" required>
+                <input type="password" id="profileFields" name="current_password" class="form-control" placeholder="Current Password" required>
             </div>
             <div class="mb-3">
-                <input type="password" name="new_password" class="form-control" placeholder="New Password" required>
+                <input type="password" id="profileFields" name="new_password" class="form-control" placeholder="New Password" required>
             </div>
             <div class="mb-3">
-                <input type="password" name="confirm_password" class="form-control" placeholder="Confirm New Password" required>
+                <input type="password" id="profileFields" name="confirm_password" class="form-control" placeholder="Confirm New Password" required>
             </div>
-            <button type="submit" class="btn btn-warning">Change Password</button>
+            <button type="submit" id="profileFields" class="btn btn-warning">Change Password</button>
         </form>
     </div>
 </div>
-
-<?php include 'footer.php'; ?>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -184,3 +186,6 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
         });
     });
 </script>
+
+
+<?php include 'footer.php'; ?>

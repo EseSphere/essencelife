@@ -12,8 +12,7 @@ $categories = [
 ];
 
 foreach ($categories as $type => $title) {
-    // Select the 6 most recent active contents per category
-    $stmt = $conn->prepare("SELECT * FROM contents WHERE content_type=? AND status='active' ORDER BY created_at DESC LIMIT 6");
+    $stmt = $conn->prepare("SELECT * FROM contents WHERE content_type=? AND status='active' ORDER BY created_at DESC");
     $stmt->bind_param("s", $type);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -49,7 +48,6 @@ foreach ($categories as $type => $title) {
         echo '</p></div>';
         echo '<div class="slider">';
 
-        $counter = 0; // counter to identify the “New” audios
         while ($row = $result->fetch_assoc()) {
             $content_name = htmlspecialchars($row['content_name']);
             $image_url = htmlspecialchars($row['image_url']);
@@ -57,17 +55,13 @@ foreach ($categories as $type => $title) {
             $content_url = htmlspecialchars($row['content_url']); // audio file
             $id = (int)$row['id'];
 
-            // Add "New" badge to the latest audios
-            $newBadge = ($counter < 6) ? ' <span class="badge bg-danger">New</span>' : '';
-            $counter++;
-
             echo '<div class="song-item" style="margin-bottom:20px;" 
-                  data-id="' . $id . '" 
-                  data-title="' . $content_name . '" 
-                  data-image="' . $image_url . '" 
-                  data-audio="' . $content_url . '">';
+          data-id="' . $id . '" 
+          data-title="' . $content_name . '" 
+          data-image="' . $image_url . '" 
+          data-audio="' . $content_url . '">';
             echo '<img src="' . $image_url . '" alt="' . $content_name . '" style="width:100%; height:200px; display:block;">';
-            echo '<p>' . $content_name . $newBadge . '<br><span style="font-size:13px;">' . $description . '</span></p>';
+            echo '<p>' . $content_name . '<br><span style="font-size:13px;">' . $description . '</span></p>';
             echo '</div>';
         }
 

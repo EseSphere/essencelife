@@ -2,16 +2,12 @@
 include 'dbconnections.php';
 
 $user_id = $_SESSION['user_id'] ?? null;
-
-// Default fall profile image
+$profileImage = './uploads/users/default.png';
 
 if ($user_id) {
   $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_assoc();
-
   if ($user && !empty($user['image'])) {
-    // Filesystem path to check existence
-    $filePath = __DIR__ . 'uploads/users/' . $user['image'];
-    $profileImage = $user['image'];
+    $profileImage = './uploads/users/' . $user['image'];
   }
 }
 ?>
@@ -23,26 +19,11 @@ if ($user_id) {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Essence – Life, Meditate & Relax</title>
-  <meta name="description" content="Essence helps you find peace and relaxation with guided meditations, sleep stories, calming music, and mindfulness exercises.">
-  <meta name="keywords" content="Essence app, meditation, mindfulness, sleep stories, calming music, relaxation, stress relief, wellness">
-  <meta name="author" content="Essence Team">
-  <meta name="robots" content="index, follow">
-  <meta property="og:title" content="Essence – Life, Meditate & Relax">
-  <meta property="og:description" content="Discover inner calm with Essence. Guided meditations, soothing music, and sleep stories to improve focus and relaxation.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://www.essenceapp.com">
-  <meta property="og:image" content="./images/logo/favicon.png">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Essence – Life, Meditate & Relax">
-  <meta name="twitter:description" content="Relax, sleep better, and focus with Essence. Guided meditations, calming music, and sleep stories.">
-  <meta name="twitter:image" content="./images/logo/favicon.png">
   <link rel="stylesheet" href="./css/style2.css">
-  <link rel="icon" href="./images/logo/favicon.png" type="image/x-icon">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 </head>
 
 <body>
@@ -51,7 +32,7 @@ if ($user_id) {
     <div class="container">
       <div class="row w-100 align-items-center">
         <div class="col-md-2 col-2">
-          <a class="navbar-brand" href="./index">
+          <a class="navbar-brand" href="./home">
             <img src="./images/logo/favicon.png" alt="Essence Life Logo" style="height: 40px;">
           </a>
         </div>
@@ -85,5 +66,7 @@ if ($user_id) {
     <div class="particle"></div>
     <div class="particle"></div>
     <div class="particle"></div>
-    <!-- Header -->
-    <section class="hero mt-5" id="questionnaire">
+
+    <!-- Main content wrapper for AJAX -->
+    <div id="mainContent" class="mt-5 text-white">
+      <div class="container-fluid my-5">
