@@ -14,8 +14,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user_id = 'user_' . time();
     $updated_at = date('Y-m-d');
 
-    $stmt = $conn->prepare("INSERT INTO users (user_id, name, email, phone, password, updated_at) VALUES (?, ?, ?, '', ?, ?)");
-    $stmt->bind_param("sssss", $user_id, $name, $email, $hashedPassword, $updated_at);
+    // Generate a unique cookie ID
+    $cookie_id = bin2hex(random_bytes(32));
+
+    // Set permanent cookie (10 years lifetime)
+    setcookie("device_cookie", $cookie_id, time() + (10 * 365 * 24 * 60 * 60), "/", "", false, true);
+
+    $stmt = $conn->prepare("INSERT INTO users (user_id, name, email, phone, password, cookie_id, updated_at) 
+                            VALUES (?, ?, ?, '', ?, ?, ?)");
+    $stmt->bind_param("ssssss", $user_id, $name, $email, $hashedPassword, $cookie_id, $updated_at);
 
     if ($stmt->execute()) {
         $response['status'] = 'success';

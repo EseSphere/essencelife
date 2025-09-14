@@ -26,7 +26,7 @@
     <div class="container-fluid">
         <div class="card-3d-wrap mx-auto">
             <div class="card-3d-wrapper">
-                <div class="card-front">
+                <div data-aos="fade-up" data-aos-duration="2000" class="card-front">
                     <div class="center-wrap">
                         <div class="section text-center">
                             <h4 class="mb-4 pb-3 text-white">Reset Password</h4>

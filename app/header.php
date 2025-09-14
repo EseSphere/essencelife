@@ -1,15 +1,4 @@
-<?php
-include 'dbconnections.php';
-
-$user_id = $_SESSION['user_id'] ?? null;
-
-if ($user_id) {
-  $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_assoc();
-  if ($user && !empty($user['image'])) {
-    $profileImage = $user['image'];
-  }
-}
-?>
+<?php include 'dbconnections.php'; ?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -43,7 +32,7 @@ if ($user_id) {
 
 <body>
   <!-- Navbar -->
-  <nav style="background-color: #001F54;" class="navbar navbar-expand-lg fixed-top">
+  <nav style="background-color: #0f4c81;" class="navbar navbar-expand-lg fixed-top">
     <div class="container">
       <div class="row w-100 align-items-center">
         <div class="col-md-2 col-2">
@@ -53,13 +42,13 @@ if ($user_id) {
         </div>
         <div class="col-md-6 col-1"></div>
         <div class="col-md-3 col-8">
-          <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="🔍 Search...">
+          <input style="background-color: rgba(52, 152, 219,1.0);" type="text" id="searchInput" class="form-control form-control-lg" placeholder="🔍 Search...">
         </div>
         <div class="col-md-1 col-1 text-end">
           <!-- Profile Dropdown -->
           <div class="dropdown">
             <a href="#" class="d-block" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-              <img src="<?= htmlspecialchars($profileImage) ?>" alt="Profile" class="rounded-circle" style="width:40px; height:40px; object-fit:cover; cursor:pointer;" onerror="this.onerror=null; this.src='./uploads/users/default.png';">
+              <i class="bi bi-gear text-white fs-1"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
               <li><a class="dropdown-item" href="profile.php">Profile</a></li>

@@ -1,101 +1,93 @@
 <?php
-ob_start(); // Start output buffering
-session_start();
-require_once('dbconnections.php');
+require_once('header-panel.php');
 
-// Disable PHP errors output
-ini_set('display_errors', 0);
-error_reporting(0);
-
-// Force JSON response
-header('Content-Type: application/json; charset=utf-8');
-
-// Default response
-$response = ['success' => false, 'message' => 'Login failed.'];
-
-try {
-    // Only accept POST
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        throw new Exception('Invalid request method.');
-    }
-
-    // Get input
-    $email = trim($_POST['logemail'] ?? '');
-    $password = $_POST['logpass'] ?? '';
-
-    if ($email === '' || $password === '') {
-        throw new Exception('Please enter both email and password.');
-    }
-
-    if (!$conn || $conn->connect_error) {
-        throw new Exception('Database connection failed.');
-    }
-
-    // Fetch user
-    $stmt = $conn->prepare("SELECT id, user_id, name, password FROM users WHERE email = ? LIMIT 1");
-    if (!$stmt) throw new Exception('Database query failed.');
-
-    $stmt->bind_param('s', $email);
-    $stmt->execute();
-    $stmt->store_result();
-
-    if ($stmt->num_rows === 0) {
-        throw new Exception('Email not found.');
-    }
-
-    $stmt->bind_result($id, $user_id, $name, $hashedPassword);
-    $stmt->fetch();
-    $stmt->close();
-
-    // Verify password
-    if (!password_verify($password, $hashedPassword)) {
-        throw new Exception('Invalid password.');
-    }
-
-    // Successful login
-    session_regenerate_id(true);
-    $_SESSION['user_id'] = $user_id;
-    $_SESSION['name'] = $name;
-    $_SESSION['logged_in'] = true;
-
-    // Check user_answers
-    $stmtAns = $conn->prepare("SELECT COUNT(*) FROM user_answers WHERE user_id = ?");
-    $stmtAns->bind_param('s', $user_id);
-    $stmtAns->execute();
-    $stmtAns->bind_result($answered_count);
-    $stmtAns->fetch();
-    $stmtAns->close();
-
-    if ($answered_count == 0) {
-        // No answers → go to questionnaire
-        $redirectUrl = 'questionnaire.php';
-    } else {
-        // Answers exist → check payments
-        $stmtPay = $conn->prepare("SELECT COUNT(*) FROM user_payments WHERE user_id = ? AND status = 'Paid'");
-        $stmtPay->bind_param('s', $user_id);
-        $stmtPay->execute();
-        $stmtPay->bind_result($payment_count);
-        $stmtPay->fetch();
-        $stmtPay->close();
-
-        if ($payment_count == 0) {
-            $redirectUrl = 'payment.php';
-        } else {
-            $redirectUrl = 'home.php';
-        }
-    }
-
-    $response = [
-        'success' => true,
-        'message' => 'Login successful! Redirecting...',
-        'redirect' => $redirectUrl
-    ];
-} catch (Exception $e) {
-    $response['message'] = $e->getMessage();
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
 }
+?>
 
-// Send JSON
-echo json_encode($response);
-ob_end_flush(); // Ensure no other output
-$conn->close();
-exit;
+<div style="margin-top: 15%;" class="section text-center">
+  <div class="container-fluid">
+    <div class="card-3d-wrap mx-auto">
+      <div class="card-3d-wrapper">
+        <div data-aos="fade-up" data-aos-duration="2000" class="card-front">
+          <div class="center-wrap">
+            <div class="section text-center">
+              <h4 class="mb-4 pb-3 text-white">Log In</h4>
+              <div id="alertContainer" class="alert-container"></div>
+              <form id="submitForm" method="POST" autocomplete="off">
+                <div class="form-group">
+                  <input type="email" required name="logemail" class="form-style" placeholder="Email" id="logemail">
+                </div>
+                <div class="form-group mt-2">
+                  <input type="password" required name="logpass" class="form-style" placeholder="Password" id="logpass">
+                </div>
+                <div class="form-group mt-2">
+                  <button type="submit" id="btnSubmitForm" class="action-btn mt-3">
+                    <i class="bi bi-sign-in"></i> Sign In
+                  </button>
+                </div>
+              </form>
+              <div class="row">
+                <div class="col-6">
+                  <p class="mt-4"><a href="./reset-password" class="link">Forgot password?</a></p>
+                </div>
+                <div class="col-6">
+                  <p class="mt-4"><a href="./signup" class="link">Don't have an account?</a></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.getElementById('submitForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const alertContainer = document.getElementById('alertContainer');
+    alertContainer.innerHTML = '';
+
+    try {
+      const response = await fetch('./fetch_login.php', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      });
+
+      // Read response as text first
+      const responseText = await response.text();
+      let result;
+
+      try {
+        result = JSON.parse(responseText);
+      } catch (err) {
+        alertContainer.innerHTML = `<div class="alert alert-danger">Server returned invalid JSON: ${responseText}</div>`;
+        return;
+      }
+
+      // Show message
+      const alertDiv = document.createElement('div');
+      alertDiv.className = `alert alert-${result.success ? 'success' : 'danger'} alert-dismissible fade show`;
+      alertDiv.innerHTML = `${result.message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+      alertContainer.appendChild(alertDiv);
+
+      // Redirect if successful
+      if (result.success && result.redirect) {
+        setTimeout(() => {
+          window.location.href = result.redirect;
+        }, 800);
+      }
+
+    } catch (error) {
+      alertContainer.innerHTML = `<div class="alert alert-danger">Network error: ${error.message}</div>`;
+    }
+  });
+</script>
+
+<?php require_once('footer-panel.php'); ?>

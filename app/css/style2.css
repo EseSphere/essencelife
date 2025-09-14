@@ -262,6 +262,12 @@
     }
 
     #searchBar::placeholder {
+        color: #bdc3c7 !important;
+        opacity: 1;
+        /* Ensures it stays fully white */
+    }
+
+    #searchInput::placeholder {
         color: #bdc3c7;
         opacity: 1;
         /* Ensures it stays fully white */

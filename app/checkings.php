@@ -5,28 +5,35 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once('dbconnections.php');
 
-if (!isset($_SESSION['user_id'])) {
-    die('User not logged in.');
-}
+// Check if device cookie exists
+if (isset($_COOKIE['device_cookie'])) {
+    $cookie_id = $_COOKIE['device_cookie'];
 
-$user_id = $_SESSION['user_id'];
+    $stmt = $conn->prepare("SELECT id FROM users WHERE cookie_id = ? LIMIT 1");
+    $stmt->bind_param("s", $cookie_id);
+    $stmt->execute();
+    $stmt->store_result();
 
-// Combined check using a single query
-$stmt = $conn->prepare("
-    SELECT 
-        (SELECT COUNT(*) FROM user_answers WHERE user_id = ?) AS answered_count,
-        (SELECT COUNT(*) FROM user_payments WHERE user_id = ? AND status = 'completed') AS payment_count
-");
-$stmt->bind_param('ss', $user_id, $user_id);
-$stmt->execute();
-$stmt->bind_result($answered_count, $payment_count);
-$stmt->fetch();
-$stmt->close();
+    if ($stmt->num_rows > 0) {
+        // Cookie exists in DB
+        if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
+            // User is logged in → redirect to home
+            header("Location: home.php");
+            exit();
+        } else {
+            // User not logged in → redirect to login
+            header("Location: login.php");
+            exit();
+        }
+    } else {
+        // Cookie does not exist in DB → redirect to questionnaire
+        header("Location: questionnaire.php");
+        exit();
+    }
 
-if ($answered_count > 0 && $payment_count > 0) {
-    // Both conditions met
-    echo "User has answered questions and completed payment. Proceeding...";
-    // Place your commands here
+    $stmt->close();
 } else {
-    echo "User has not completed all requirements.";
+    // No cookie found → redirect to questionnaire
+    header("Location: questionnaire.php");
+    exit();
 }

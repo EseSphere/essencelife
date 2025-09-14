@@ -1,13 +1,7 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id'])) {
-    header("Location: index.php");
-    exit;
-}
 include 'header-panel.php';
 include 'dbconnections.php';
-
-$userId = $_SESSION['user_id'];
 
 // Define all questions
 $questions = [
@@ -36,7 +30,7 @@ $questions = [
         'title' => 'Have you tried to improve your sleep?',
         'subtitle' => 'You have come to the right place for help.',
         'options' => [
-            "I don\'t know how to" => "bi-clock-history",
+            "I don't know how to" => "bi-clock-history",
             "Sometimes" => "bi-arrow-repeat",
             "I rely on sleep aids" => "bi-lightning-fill",
             "Never" => "bi-slash-circle"
@@ -54,29 +48,51 @@ $questions = [
     ]
 ];
 
+// Flow mapping (adaptive branching)
+$flowMap = [
+    "1" => [
+        "Reduce Stress" => "3",
+        "Improve Sleep" => "2",
+        "Increase Focus" => "4",
+        "Practice Mindfulness" => "3",
+        "General Relaxation" => "4"
+    ],
+    "2" => [
+        "Occasionally" => "3",
+        "Sometimes" => "4",
+        "Frequently" => "3",
+        "Never" => "4"
+    ],
+    "3" => [
+        "I don't know how to" => "4",
+        "Sometimes" => "4",
+        "I rely on sleep aids" => "4",
+        "Never" => "4"
+    ]
+];
+
 // Fetch previous answers
 $previousAnswers = [];
-$stmt = $conn->prepare("SELECT question_id, answer FROM user_answers WHERE user_id = ?");
-$stmt->bind_param("s", $userId);
-$stmt->execute();
-$result = $stmt->get_result();
-while ($row = $result->fetch_assoc()) {
-    $previousAnswers[$row['question_id']][] = $row['answer'];
+if (isset($_SESSION['user_id'])) {
+    $userId = $_SESSION['user_id'];
+    $stmt = $conn->prepare("SELECT question_id, answer FROM user_answers WHERE user_id = ?");
+    $stmt->bind_param("s", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+        $previousAnswers[$row['question_id']][] = $row['answer'];
+    }
+    $stmt->close();
 }
-$stmt->close();
 ?>
 
-<!-- Background Music -->
 <audio id="bgMusic" loop>
     <source src="assets/calm-music.mp3" type="audio/mpeg">
 </audio>
-
-<!-- Transition Sound -->
 <audio id="transitionSound">
     <source src="assets/soft-swoosh.mp3" type="audio/mpeg">
 </audio>
 
-<!-- Gradient Progress Bar -->
 <div class="progress-container mb-4">
     <div class="progress-bar-gradient" style="width: 0%;"></div>
 </div>
@@ -88,7 +104,6 @@ $stmt->close();
             <div class="question-block <?= ($qid == $firstQid) ? 'active' : '' ?>" data-qid="<?= $qid ?>">
                 <h3 class="mb-2 fw-bold text-white"><?= $q['title'] ?></h3>
                 <p class="mb-4 text-light"><?= $q['subtitle'] ?></p>
-
                 <div class="d-flex flex-column align-items-center gap-3 mb-3">
                     <?php foreach ($q['options'] as $label => $icon):
                         $checked = in_array($label, $previousAnswers[$qid] ?? []) ? 'checked' : '';
@@ -102,16 +117,13 @@ $stmt->close();
                         </label>
                     <?php endforeach; ?>
                 </div>
-
                 <div class="d-flex justify-content-between mt-4">
                     <button class="action-btn prev-btn" <?= ($qid == $firstQid) ? 'disabled' : '' ?>>
                         <i class="bi bi-arrow-left-circle"></i> Previous
                     </button>
-
                     <button class="action-btn next-btn">
                         <i class="bi bi-check-circle"></i> <?= ($qid == array_key_last($questions)) ? 'Submit' : 'Next' ?>
                     </button>
-
                     <button type="button" class="action-btn skip-btn">
                         <i class="bi bi-skip-forward-circle"></i> Skip
                     </button>
@@ -123,11 +135,11 @@ $stmt->close();
 </div>
 
 <style>
-    /* Buttons */
+    /* Buttons and progress styles remain the same as before */
     .action-btn {
         color: #fff;
         border: none;
-        padding: 0.6rem 1.2rem;
+        padding: .6rem 1.2rem;
         font-size: 1rem;
         border-radius: .5rem;
         transition: transform .2s, box-shadow .2s, background-position .5s;
@@ -170,7 +182,6 @@ $stmt->close();
         filter: brightness(1.1);
     }
 
-    /* Progress Bar */
     .progress-container {
         width: 100%;
         height: 12px;
@@ -200,7 +211,6 @@ $stmt->close();
         }
     }
 
-    /* Calm animation */
     .question-block {
         position: absolute;
         top: 0;
@@ -223,17 +233,15 @@ $stmt->close();
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
-        var totalQuestions = $('.question-block').length;
-
         var bgMusic = document.getElementById('bgMusic');
         var transitionSound = document.getElementById('transitionSound');
         bgMusic.volume = 0.2;
         transitionSound.volume = 0.5;
+        $(document).one('click', () => bgMusic.play().catch(() => {}));
 
-        // Start music on first user click
-        $(document).one('click', function() {
-            bgMusic.play().catch(() => {});
-        });
+        var askedQuestions = ["1"]; // Track the path of asked questions
+        var flowMap = <?php echo json_encode($flowMap); ?>;
+        var userId = "<?= $_SESSION['user_id'] ?? '' ?>";
 
         function playTransitionSound() {
             transitionSound.currentTime = 0;
@@ -241,10 +249,8 @@ $stmt->close();
         }
 
         function updateProgress() {
-            var currentIndex = $('.question-block.active').index() + 1;
-            $('.progress-bar-gradient').css('width', (currentIndex / totalQuestions * 100) + '%');
+            $('.progress-bar-gradient').css('width', (askedQuestions.length / 4 * 100) + '%');
         }
-        updateProgress();
 
         function showQuestion(container) {
             $('.question-block').removeClass('active');
@@ -265,10 +271,26 @@ $stmt->close();
             });
         }
 
+        function getNextQuestionId(currentQid, selectedAnswers) {
+            if (!selectedAnswers.length) return null;
+            for (var i = 0; i < selectedAnswers.length; i++) {
+                var ans = selectedAnswers[i];
+                if (flowMap[currentQid] && flowMap[currentQid][ans]) {
+                    var candidate = flowMap[currentQid][ans];
+                    if (askedQuestions.indexOf(candidate) === -1) return candidate;
+                }
+            }
+            var allQids = Object.keys(<?php echo json_encode($questions); ?>);
+            for (var j = 0; j < allQids.length; j++) {
+                if (askedQuestions.indexOf(allQids[j]) === -1) return allQids[j];
+            }
+            return null;
+        }
+
         $('.next-btn').click(function() {
             playTransitionSound();
             var container = $(this).closest('.question-block');
-            var qid = container.data('qid');
+            var qid = container.data('qid').toString();
             var selectedAnswers = [];
             container.find('input:checked').each(function() {
                 selectedAnswers.push($(this).val());
@@ -276,28 +298,28 @@ $stmt->close();
 
             saveAnswers(qid, selectedAnswers).done(function(response) {
                 $('#selectedAnswers').html(response.message);
-                var next = container.next('.question-block');
-                if (next.length) {
-                    showQuestion(next);
-                } else {
-                    window.location.href = './payment.php';
+                var nextQid = getNextQuestionId(qid, selectedAnswers);
+                if (nextQid) {
+                    askedQuestions.push(nextQid);
+                    showQuestion($('.question-block[data-qid="' + nextQid + '"]'));
+                    return;
                 }
+                window.location.href = './signup.php';
             });
         });
 
         $('.prev-btn').click(function() {
             playTransitionSound();
-            var container = $(this).closest('.question-block');
-            var prev = container.prev('.question-block');
-            if (prev.length) {
-                showQuestion(prev);
-            }
+            if (askedQuestions.length <= 1) return;
+            askedQuestions.pop();
+            var prevQid = askedQuestions[askedQuestions.length - 1];
+            showQuestion($('.question-block[data-qid="' + prevQid + '"]'));
         });
 
         $('.skip-btn').click(function() {
             playTransitionSound();
             var container = $(this).closest('.question-block');
-            var qid = container.data('qid');
+            var qid = container.data('qid').toString();
             var selectedAnswers = [];
             container.find('input:checked').each(function() {
                 selectedAnswers.push($(this).val());
@@ -305,12 +327,13 @@ $stmt->close();
 
             saveAnswers(qid, selectedAnswers).done(function(response) {
                 $('#selectedAnswers').html(response.message);
-                var next = container.next('.question-block');
-                if (next.length) {
-                    showQuestion(next);
-                } else {
-                    window.location.href = './payment.php';
+                var nextQid = getNextQuestionId(qid, selectedAnswers);
+                if (nextQid) {
+                    askedQuestions.push(nextQid);
+                    showQuestion($('.question-block[data-qid="' + nextQid + '"]'));
+                    return;
                 }
+                window.location.href = './signup.php';
             });
         });
 
@@ -320,7 +343,6 @@ $stmt->close();
             else label.removeClass('active');
         });
 
-        // Fade out music on exit
         window.onbeforeunload = function() {
             var step = 0.05;
             var interval = 50;

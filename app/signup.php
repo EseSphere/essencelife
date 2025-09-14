@@ -29,7 +29,7 @@ require_once('header-panel.php');
     <div class="container-fluid">
         <div class="card-3d-wrap mx-auto">
             <div class="card-3d-wrapper">
-                <div class="card-front">
+                <div data-aos="fade-up" data-aos-duration="2000" class="card-front">
                     <div class="center-wrap">
                         <div class="section text-center">
                             <h4 class="mb-4 pb-3 text-white">Sign Up</h4>
@@ -57,7 +57,7 @@ require_once('header-panel.php');
                                     </button>
                                 </div>
                                 <div class="form-group mt-2 w-100 flex justify-start items-start text-start">
-                                    <p class="mb-0 mt-4 text-left"><a href="./" class="link">Have account? Login</a></p>
+                                    <p class="mb-0 mt-4 text-left"><a href="./login" class="link">Have account? Login</a></p>
                                 </div>
                             </form>
                         </div>

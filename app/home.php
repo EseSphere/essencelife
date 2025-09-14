@@ -12,7 +12,7 @@
 <div id="recentlyPlayedSection" class="container-fluid mt-5 mb-3">
     <h5 class="font-weight-bold w-100 flex justify-start text-start items-start">Recently Played</h5>
 
-    <div class="recently-played-wrapper position-relative">
+    <div class="recently-played-wrapper position-relative mt-4">
         <button id="recentPrev" class="scroll-btn left-btn">◀</button>
         <div id="recentlyPlayedContainer">
             <!-- Recently played songs will be appended here -->
@@ -22,10 +22,17 @@
 </div>
 
 <!-- Dynamic Content Container -->
-<div class="container-fluid">
+<div class="container-fluid mt-5">
     <div id="contentContainer" class="row">
         <!-- Dynamic content loads here -->
     </div>
+</div>
+
+<!-- Description Info -->
+<div class="card alert alert-success p-2 mb-4 mt-5 shadow-lg border-rounded">
+    <h4 class="font-weight-bold">Essence – Life, Meditate & Relax</h4>
+    <hr>
+    <p class="lead fs-6">Discover inner peace with guided meditations, calming music, and sleep stories.</p>
 </div>
 
 <script>
@@ -147,7 +154,7 @@
 
             recent.forEach((song, idx) => {
                 const songHtml = `
-        <div class="song-item recently-played" 
+        <div style="height:200px; width:200px;" class="song-item recently-played" 
              data-title="${song.title}" 
              data-audio="${song.audio}" 
              data-image="${song.image || 'default.png'}" 
@@ -329,7 +336,7 @@
             return `${greeting} ${name}`;
         }
 
-        document.getElementById("greeting").textContent = getGreeting(userName);
+        document.getElementById("greeting").textContent = getGreeting('');
 
     });
 </script>

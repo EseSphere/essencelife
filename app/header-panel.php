@@ -26,6 +26,7 @@
     <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 </head>
 
 <body>
@@ -40,7 +41,7 @@
 
         <!-- Questionnaire -->
         <section class="hero" id="questionnaire">
-            <div style="box-shadow: rgba(17, 12, 46, 0.15) 0px 48px 100px 0px;" class="app-header mb-5">
+            <div style="box-shadow: rgba(17, 12, 46, 0.15) 0px 48px 100px 0px; background-color:rgba(41, 128, 185,1.0);" class="app-header mb-5">
                 <div class="row w-100">
                     <div class="col-2 d-flex align-items-center justify-content-center">
                         <img src="./images/logo/favicon.png" alt="Essence Life Logo">
