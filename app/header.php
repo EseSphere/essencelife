@@ -2,12 +2,11 @@
 include 'dbconnections.php';
 
 $user_id = $_SESSION['user_id'] ?? null;
-$profileImage = './uploads/users/default.png';
 
 if ($user_id) {
   $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_assoc();
   if ($user && !empty($user['image'])) {
-    $profileImage = './uploads/users/' . $user['image'];
+    $profileImage = $user['image'];
   }
 }
 ?>
@@ -32,7 +31,10 @@ if ($user_id) {
   <meta name="twitter:title" content="Essence – Life, Meditate & Relax">
   <meta name="twitter:description" content="Relax, sleep better, and focus with Essence. Guided meditations, calming music, and sleep stories.">
   <meta name="twitter:image" content="./images/logo/favicon.png">
-  <link rel="stylesheet" href="./css/style2.css">
+  <link rel="icon" href="./images/logo/favicon.png" type="image/x-icon">
+  <link rel="shortcut icon" href="./images/logo/favicon.png" type="image/x-icon">
+  <link rel="apple-touch-icon" href="./images/logo/favicon.png">
+  <link rel=" stylesheet" href="./css/style2.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
