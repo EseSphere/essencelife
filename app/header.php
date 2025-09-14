@@ -28,6 +28,7 @@
   <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 </head>
 
 <body>
@@ -54,6 +55,9 @@
               <li><a class="dropdown-item" href="profile.php">Profile</a></li>
               <li>
                 <hr class="dropdown-divider">
+              </li>
+              <li><a class="dropdown-item" href="settings.php">Settings</a></li>
+              <hr class="dropdown-divider">
               </li>
               <li><a class="dropdown-item" href="logout.php">Logout</a></li>
             </ul>

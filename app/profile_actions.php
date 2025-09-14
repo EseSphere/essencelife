@@ -49,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone = $conn->real_escape_string($_POST['phone']);
     $updateFields = "name='$name', email='$email', phone='$phone'";
 
+    // Handle image upload
     if (isset($_FILES['image']) && $_FILES['image']['size'] > 0) {
         $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
         $filename = 'uploads/users/' . uniqid() . '.' . $ext;
@@ -56,11 +57,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (move_uploaded_file($_FILES['image']['tmp_name'], $filename)) {
             $updateFields .= ", image='" . $conn->real_escape_string($filename) . "'";
         }
+    } else {
+        // Keep existing image if no new image uploaded
+        if (!empty($_POST['existing_image'])) {
+            $updateFields .= ", image='" . $conn->real_escape_string($_POST['existing_image']) . "'";
+        }
     }
 
     $sql = "UPDATE users SET $updateFields WHERE user_id='$user_id'";
     if ($conn->query($sql)) {
-        $image = isset($filename) ? $filename : null;
+        $image = isset($filename) ? $filename : $_POST['existing_image'] ?? null;
         echo json_encode(['status' => 'success', 'image' => $image]);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Failed to update profile']);

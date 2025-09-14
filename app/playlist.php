@@ -51,7 +51,7 @@ $user_id = $_SESSION['user_id'];
 
 <div class="container-fluid">
     <!-- Playlist Header -->
-    <div id="card-bg" class="card flex text-white justify-start items-start p-3 text-start shadow-lg border-rounded mb-4">
+    <div data-aos="fade-up" data-aos-anchor-placement="bottom-bottom" data-aos-duration="900" id="card-bg" class="card flex text-white justify-start items-start p-3 text-start shadow-lg border-rounded mb-4">
         <div class="text-center">
             <h4 class="fw-bold">Playlists</h4>
             <p class="fs-6">Create and manage your favorite playlists to organize your audios efficiently.</p>
@@ -72,7 +72,7 @@ $user_id = $_SESSION['user_id'];
         <!-- Playlists will load here via AJAX -->
     </div>
 
-    <div id="card-bg" class="card flex text-white justify-start items-start p-3 text-start shadow-lg border-rounded mt-5 mb-4">
+    <div data-aos="fade-right" data-aos-offset="300" data-aos-duration="900" data-aos-easing="ease-in-sine" id="card-bg" class="card flex text-white justify-start items-start p-3 text-start shadow-lg border-rounded mt-5 mb-4">
         <h4 class="fw-bold">Info</h4>
         <ul class="fs-6" style="color: rgba(255,255,255,0.8);">
             <li>Click on a playlist to view or add audios.</li>
@@ -117,7 +117,7 @@ $user_id = $_SESSION['user_id'];
                             const div = document.createElement('div');
                             div.className = 'col-md-4 col-12';
                             div.innerHTML = `
-                        <div class="playlist-card shadow-lg p-3 d-flex justify-content-between align-items-center" style="border:1px solid #40739e;">
+                        <div data-aos="fade-left" data-aos-anchor="#example-anchor" data-aos-offset="500" data-aos-duration="700" class="playlist-card shadow-lg p-3 d-flex justify-content-between align-items-center" style="border:1px solid #40739e;">
                             <a href="playlist-details.php?playlist_id=${pl.id}" class="text-white text-decoration-none flex-grow-1 me-2 d-flex align-items-center">
                                 <div>
                                     <h6 class="mb-1">${pl.name}</h6>

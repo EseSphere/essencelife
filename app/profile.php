@@ -61,41 +61,43 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
         margin: 30px 0;
     }
 
-    #profileFields {
+    .profile-input {
         height: 50px;
     }
 </style>
 
 <div class="container-fluid mt-5">
-    <div id="card-bg" class="card text-white flex justify-start items-start text-start shadow-lg border-rounded p-4 mb-4">
+    <div data-aos="fade-up" data-aos-anchor-placement="bottom-bottom" data-aos-duration="900" id="card-bg" class="card text-white flex justify-start items-start text-start shadow-lg border-rounded p-4 mb-4">
         <h4 class="fw-bold">My Profile</h4>
         <p class="fs-6">View or update your profile details here.</p>
     </div>
 
     <div id="ajaxMessage"></div>
 
-    <div class="profile-card">
+    <div data-aos="fade-up" data-aos-anchor-placement="top-center" data-aos-duration="900" class="profile-card">
         <img id="profileImage" src="<?= htmlspecialchars($user['image'] ?: 'default.png') ?>" alt="Profile Image">
 
         <!-- Profile Update Form -->
         <form id="updateProfileForm" enctype="multipart/form-data">
+            <input type="hidden" name="existing_image" value="<?= htmlspecialchars($user['image'] ?? '') ?>">
+
             <div class="mb-3">
-                <input type="text" id="profileFields" name="name" class="form-control" placeholder="Name" value="<?= htmlspecialchars($user['name']) ?>" required>
+                <input type="text" name="name" class="form-control profile-input" placeholder="Name" value="<?= htmlspecialchars($user['name']) ?>" required>
             </div>
             <div class="mb-3">
-                <input type="email" id="profileFields" name="email" class="form-control" placeholder="Email" value="<?= htmlspecialchars($user['email']) ?>" required>
+                <input type="email" name="email" class="form-control profile-input" placeholder="Email" value="<?= htmlspecialchars($user['email']) ?>" required>
             </div>
             <div class="mb-3">
-                <input type="text" id="profileFields" name="phone" class="form-control" placeholder="Phone" value="<?= htmlspecialchars($user['phone']) ?>" required>
+                <input type="text" name="phone" class="form-control profile-input" placeholder="Phone" value="<?= htmlspecialchars($user['phone']) ?>" required>
             </div>
 
             <!-- Custom File Upload Button -->
             <label class="custom-file-btn">
                 Choose Image
-                <input type="file" id="profileFields" name="image" style="display:none;" id="profileFileInput">
+                <input type="file" name="image" style="display:none;" id="profileFileInput">
             </label>
             <br>
-            <button type="submit" id="profileFields" class="btn btn-success">Update Profile</button>
+            <button type="submit" class="btn btn-success">Update Profile</button>
         </form>
 
         <div class="section-divider"></div>
@@ -104,15 +106,15 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
         <form id="changePasswordForm">
             <h5 class="mb-3">Change Password</h5>
             <div class="mb-3">
-                <input type="password" id="profileFields" name="current_password" class="form-control" placeholder="Current Password" required>
+                <input type="password" name="current_password" class="form-control profile-input" placeholder="Current Password" required>
             </div>
             <div class="mb-3">
-                <input type="password" id="profileFields" name="new_password" class="form-control" placeholder="New Password" required>
+                <input type="password" name="new_password" class="form-control profile-input" placeholder="New Password" required>
             </div>
             <div class="mb-3">
-                <input type="password" id="profileFields" name="confirm_password" class="form-control" placeholder="Confirm New Password" required>
+                <input type="password" name="confirm_password" class="form-control profile-input" placeholder="Confirm New Password" required>
             </div>
-            <button type="submit" id="profileFields" class="btn btn-warning">Change Password</button>
+            <button type="submit" class="btn btn-warning">Change Password</button>
         </form>
     </div>
 </div>
@@ -139,6 +141,9 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
                     profileImage.src = e.target.result;
                 }
                 reader.readAsDataURL(file);
+            } else {
+                // Revert to existing image if no file selected
+                profileImage.src = updateForm.querySelector('input[name="existing_image"]').value || 'default.png';
             }
         });
 
@@ -146,6 +151,11 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
         updateForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const formData = new FormData(updateForm);
+
+            // If no new image selected, append existing image
+            if (!profileFileInput.files.length) {
+                formData.append('existing_image', updateForm.querySelector('input[name="existing_image"]').value);
+            }
 
             fetch('profile_actions.php', {
                     method: 'POST',
@@ -186,6 +196,5 @@ $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_asso
         });
     });
 </script>
-
 
 <?php include 'footer.php'; ?>

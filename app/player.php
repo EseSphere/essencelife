@@ -67,7 +67,6 @@
         <hr>
         <p class="lead fs-6">Discover inner peace with guided meditations, calming music, and sleep stories.</p>
     </div>
-
 </div>
 
 <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -76,12 +75,13 @@
         let upNext = [];
         let currentIndex = 0;
 
-        function loadAudio(id) {
+        /*** Load audio by ID ***/
+        function loadAudio(id, updateHistory = true) {
             $.ajax({
                 url: 'fetch_audio.php',
                 type: 'GET',
                 data: {
-                    id: id
+                    id
                 },
                 dataType: 'json',
                 success: function(res) {
@@ -103,22 +103,33 @@
                     $('#description').text(song.description || 'No description');
                     $('#songCategory').text(song.content_type);
 
-                    upNext = res.upNext;
+                    upNext = res.upNext || [];
+                    currentIndex = 0;
                     renderUpNext();
+
+                    // Update browser URL without reloading
+                    if (updateHistory) {
+                        const newUrl = `player.php?id=${id}`;
+                        window.history.pushState({
+                            id
+                        }, '', newUrl);
+                    }
                 }
             });
         }
 
+        /*** Render Up Next songs ***/
         function renderUpNext() {
             const container = $('#upNextContainer');
             container.empty();
+
             upNext.forEach((song, idx) => {
                 const card = $(`
                 <div class="p-2 text-center">
                     <a href="javascript:void(0)" class="text-decoration-none text-white" data-id="${song.id}">
                         <img src="${song.image_url || 'default.png'}"
-                            alt="${song.content_name}"
-                            style="width:120px;height:120px;object-fit:cover;border-radius:10px;">
+                             alt="${song.content_name}"
+                             style="width:120px;height:120px;object-fit:cover;border-radius:10px;">
                         <p class="small mt-1">${song.content_name}</p>
                     </a>
                 </div>
@@ -130,6 +141,7 @@
             });
         }
 
+        /*** Prev / Next Buttons ***/
         $('#prevBtn').click(function() {
             if (currentIndex > 0) {
                 loadAudio(upNext[currentIndex - 1].id);
@@ -144,10 +156,16 @@
             }
         });
 
+        /*** Handle browser back/forward buttons ***/
+        window.onpopstate = function(event) {
+            const id = event.state?.id || new URLSearchParams(window.location.search).get('id');
+            if (id) loadAudio(id, false);
+        };
+
         // Initial load: first audio ID from URL parameter
         const params = new URLSearchParams(window.location.search);
         const initId = params.get('id') || 1;
-        loadAudio(initId);
+        loadAudio(initId, false);
     });
 </script>
 
