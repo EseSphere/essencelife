@@ -77,12 +77,23 @@ if (!$playlist) {
                 $image = !empty($content['image_url']) ? $content['image_url'] : 'placeholder.png';
                 echo '<div class="col-md-4 col-12">';
                 echo '<div class="audio-card shadow-lg p-3 d-flex align-items-center justify-content-between" style="border:1px solid #40739e;">';
-                echo '<a href="player.php?id=' . $content['id'] . '" class="text-decoration-none text-white d-flex align-items-center flex-grow-1">';
-                echo '<img src="' . htmlspecialchars($image) . '" alt="Audio Image">';
-                echo '<div>';
-                echo '<h6 class="mb-1">' . htmlspecialchars($content['content_name']) . '</h6>';
-                echo '<span class="audio-count">' . htmlspecialchars($content['content_type']) . '</span>';
-                echo '</div></a>';
+
+                // Playable wrapper
+                echo '<div class="d-flex align-items-center flex-grow-1 play-audio-wrapper"
+                    data-id="' . $content['id'] . '"
+                    data-title="' . htmlspecialchars($content['content_name']) . '"
+                    data-audio="' . htmlspecialchars($content['content_url']) . '"
+                    data-image="' . htmlspecialchars($image) . '"
+                    data-category="' . htmlspecialchars($content['content_type']) . '"
+                    data-description="' . htmlspecialchars($content['description'] ?? '') . '"
+                    data-related=\'' . json_encode([]) . '\'>
+                <img src="' . htmlspecialchars($image) . '" alt="Audio Image">
+                <div>
+                    <h6 class="mb-1">' . htmlspecialchars($content['content_name']) . '</h6>
+                    <span class="audio-count">' . htmlspecialchars($content['content_type']) . '</span>
+                </div>
+            </div>';
+
                 echo '<button class="btn btn-sm btn-success add-to-playlist-btn" data-audio="' . $content['id'] . '"><i class="bi bi-plus"></i></button>';
                 echo '</div></div>';
             }
@@ -100,13 +111,28 @@ if (!$playlist) {
         const allContentsContainer = document.getElementById('allContentsContainer');
         const messageDiv = document.getElementById('ajaxMessage');
 
+        const playerContainer = $('#audioPlayerContainer'); // Footer player
+        const miniPlayer = $('#miniPlayer'); // Mini player
+        const audioEl = $('#audioPlayer')[0];
+
+        // Mini player elements
+        const miniTitleEl = $('#miniCurrentSongTitle');
+        const miniImgEl = $('#miniCurrentSongImage');
+        const miniPlayPauseBtn = $('#miniPlayPauseBtn');
+
+        // Footer player elements
+        const playerTitleEl = $('#currentSongTitle');
+        const playerImgEl = $('#currentSongImage');
+        const playerCategoryEl = $('#currentSongCategory');
+        const playerDescriptionEl = $('#currentSongDescription');
+        const playPauseBtn = $('#playPauseBtn');
+
         function showMessage(text, type = 'success') {
             messageDiv.innerHTML = `<div class="alert alert-${type}">${text}</div>`;
-            setTimeout(() => {
-                messageDiv.innerHTML = '';
-            }, 3000);
+            setTimeout(() => messageDiv.innerHTML = '', 3000);
         }
 
+        // Load audios in playlist
         function loadPlaylistAudios() {
             fetch('playlist_actions.php', {
                     method: 'POST',
@@ -119,7 +145,6 @@ if (!$playlist) {
                 .then(data => {
                     playlistContainer.innerHTML = '';
                     const playlistAudioIds = [];
-
                     if (data.status === 'success' && data.audios.length > 0) {
                         data.audios.forEach(audio => {
                             playlistAudioIds.push(audio.id);
@@ -128,22 +153,30 @@ if (!$playlist) {
                             div.className = 'col-md-4 col-12';
                             div.innerHTML = `
                         <div class="audio-card shadow-lg p-3 d-flex align-items-center justify-content-between" style="border:1px solid #40739e;">
-                            <a href="player.php?id=${audio.id}" class="text-decoration-none text-white d-flex align-items-center flex-grow-1">
+                            <div class="d-flex align-items-center flex-grow-1 play-audio-wrapper"
+                                 data-id="${audio.id}"
+                                 data-title="${audio.title}"
+                                 data-audio="${audio.content_url}"
+                                 data-image="${image}"
+                                 data-category="${audio.type}"
+                                 data-description="">
                                 <img src="${image}" alt="Audio Image">
                                 <div>
                                     <h6 class="mb-1">${audio.title}</h6>
                                     <span class="audio-count">${audio.type}</span>
                                 </div>
-                            </a>
-                            <button class="btn btn-sm btn-danger remove-from-playlist-btn" data-audio="${audio.id}"><i class="bi bi-trash"></i></button>
+                            </div>
+                            <button class="btn btn-sm btn-danger remove-from-playlist-btn" data-audio="${audio.id}">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>`;
                             playlistContainer.appendChild(div);
                         });
                     } else {
-                        playlistContainer.innerHTML = `<div class="col-12"><p class="text-white">No audios have been added to this playlist yet.</p></div>`;
+                        playlistContainer.innerHTML = `<div class="col-12"><p class="text-white">No audios in this playlist yet.</p></div>`;
                     }
 
-                    // Disable Add button for already added audios
+                    // Disable add buttons for already added audios
                     Array.from(allContentsContainer.querySelectorAll('.audio-card')).forEach(card => {
                         const btn = card.querySelector('.add-to-playlist-btn');
                         const audioId = parseInt(btn.dataset.audio);
@@ -155,61 +188,135 @@ if (!$playlist) {
                             btn.innerHTML = '<i class="bi bi-plus"></i>';
                         }
                     });
+
+                    attachPlayAudioEvents();
                 });
         }
 
         loadPlaylistAudios();
 
-        // Add content to playlist
+        // Add audio
         allContentsContainer.addEventListener('click', function(e) {
             if (e.target.closest('.add-to-playlist-btn')) {
                 const btn = e.target.closest('.add-to-playlist-btn');
-                const audioId = btn.dataset.audio;
                 fetch('playlist_actions.php', {
                         method: 'POST',
                         body: new URLSearchParams({
                             action: 'add_audio',
                             playlist_id: playlistId,
-                            audio_id: audioId
+                            audio_id: btn.dataset.audio
                         })
                     })
                     .then(res => res.json())
                     .then(data => {
                         if (data.status === 'success') {
                             loadPlaylistAudios();
-                            showMessage('Audio added to playlist!', 'success');
-                        } else {
-                            showMessage(data.message, 'danger');
-                        }
+                            showMessage('Audio added!', 'success');
+                        } else showMessage(data.message, 'danger');
                     });
             }
         });
 
-        // Remove audio from playlist
+        // Remove audio
         playlistContainer.addEventListener('click', function(e) {
             if (e.target.closest('.remove-from-playlist-btn')) {
                 const btn = e.target.closest('.remove-from-playlist-btn');
-                const audioId = btn.dataset.audio;
                 fetch('playlist_actions.php', {
                         method: 'POST',
                         body: new URLSearchParams({
                             action: 'remove_audio',
                             playlist_id: playlistId,
-                            audio_id: audioId
+                            audio_id: btn.dataset.audio
                         })
                     })
                     .then(res => res.json())
                     .then(data => {
                         if (data.status === 'success') {
                             loadPlaylistAudios();
-                            showMessage('Audio removed from playlist!', 'success');
-                        } else {
-                            showMessage(data.message, 'danger');
-                        }
+                            showMessage('Audio removed!', 'success');
+                        } else showMessage(data.message, 'danger');
                     });
+            }
+        });
+
+        // Play song in both mini + footer player
+        function playSong(song) {
+            localStorage.setItem('currentSong', JSON.stringify(song));
+
+            // Show both players
+            miniPlayer.show();
+            playerContainer.show();
+
+            // Update footer player
+            playerTitleEl.text(song.title);
+            playerImgEl.attr('src', song.image || 'default.png');
+            playerCategoryEl.text(song.category || '');
+            playerDescriptionEl.text(song.description || 'No description available.');
+
+            // Update mini player
+            miniTitleEl.text(song.title);
+            miniImgEl.attr('src', song.image || 'default.png');
+
+            // Set audio src and play
+            if (audioEl.src !== song.audio) {
+                audioEl.src = song.audio;
+                audioEl.currentTime = song.time || 0;
+            }
+            audioEl.play();
+
+            // Update play/pause icons
+            playPauseBtn.find('i').removeClass('bi-play-fill').addClass('bi-pause-fill');
+            miniPlayPauseBtn.find('i').removeClass('bi-play-fill').addClass('bi-pause-fill');
+        }
+
+        // Attach play events to audio cards
+        function attachPlayAudioEvents() {
+            document.querySelectorAll('.play-audio-wrapper').forEach(wrapper => {
+                wrapper.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const data = e.currentTarget.dataset;
+                    playSong({
+                        id: data.id,
+                        title: data.title,
+                        audio: data.audio,
+                        image: data.image,
+                        category: data.category,
+                        description: data.description,
+                        time: 0
+                    });
+                });
+            });
+        }
+
+        // Restore last played song
+        const savedSong = JSON.parse(localStorage.getItem('currentSong') || '{}');
+        if (savedSong.audio) {
+            playSong(savedSong);
+        }
+
+        // Update playback time
+        $('#audioPlayer').on('timeupdate', function() {
+            const saved = JSON.parse(localStorage.getItem('currentSong') || '{}');
+            if (saved.audio) {
+                saved.time = this.currentTime;
+                localStorage.setItem('currentSong', JSON.stringify(saved));
+            }
+        });
+
+        // Mini player play/pause toggle
+        miniPlayPauseBtn.on('click', function() {
+            if (audioEl.paused) {
+                audioEl.play();
+                $(this).find('i').removeClass('bi-play-fill').addClass('bi-pause-fill');
+                playPauseBtn.find('i').removeClass('bi-play-fill').addClass('bi-pause-fill');
+            } else {
+                audioEl.pause();
+                $(this).find('i').removeClass('bi-pause-fill').addClass('bi-play-fill');
+                playPauseBtn.find('i').removeClass('bi-pause-fill').addClass('bi-play-fill');
             }
         });
     });
 </script>
+
 
 <?php include 'footer.php'; ?>

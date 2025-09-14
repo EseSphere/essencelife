@@ -5,7 +5,6 @@
     <p class="lead">Discover inner peace with guided meditations, calming music, and sleep stories.</p>
 </div>
 
-<!-- Greeting Container -->
 <div id="greeting" style="font-size: 1.5rem; width:100%; font-weight: 600; color: #fff; text-align: left; margin: 40px 0;"></div>
 
 <!-- Recently Played Section -->
@@ -13,29 +12,35 @@
     <h5 class="font-weight-bold w-100 flex justify-start text-start items-start">Recently Played</h5>
     <div class="recently-played-wrapper position-relative mt-4">
         <button id="recentPrev" class="scroll-btn left-btn">◀</button>
-        <div id="recentlyPlayedContainer">
-            <!-- Recently played songs will be appended here -->
-        </div>
+        <div id="recentlyPlayedContainer"></div>
         <button id="recentNext" class="scroll-btn right-btn">▶</button>
     </div>
 </div>
 
-<!-- Dynamic Content Container -->
 <div class="container-fluid mt-5">
-    <div id="contentContainer" class="row">
-        <!-- Dynamic content loads here -->
-    </div>
+    <div id="contentContainer" class="row"></div>
 </div>
 
-<!-- Description Info -->
 <div class="card alert alert-success p-2 mb-4 mt-5 shadow-lg border-rounded">
     <h4 class="font-weight-bold">Essence – Life, Meditate & Relax</h4>
     <hr>
     <p class="lead fs-6">Discover inner peace with guided meditations, calming music, and sleep stories.</p>
 </div>
 
+<div class="card alert alert-danger p-2 mb-4 mt-5 shadow-lg border-rounded">
+    <p class="lead fs-6">Essence is your sanctuary for mindfulness and relaxation. Immerse yourself in guided meditations designed to help you find balance and tranquility. Reduce stress, improve focus, and enhance well-being with our sessions.</p>
+</div>
+
 <script>
     $(document).ready(function() {
+        const playerContainer = $('#audioPlayerContainer');
+        const miniPlayer = $('#miniPlayer');
+        const audioEl = $('#audioPlayer')[0];
+        const playerTitleEl = $('#currentSongTitle');
+        const playerImgEl = $('#currentSongImage');
+        const playerCategoryEl = $('#currentSongCategory');
+        const playerDescriptionEl = $('#currentSongDescription');
+
         let songs = [];
 
         /*** AJAX content loader ***/
@@ -54,17 +59,15 @@
             });
         }
 
-        /*** Load songs from page ***/
         function loadSongs() {
             songs = [];
             $('.song-item').each(function() {
                 songs.push({
                     title: $(this).data('title'),
-                    image: $(this).data('image'),
                     audio: $(this).data('audio'),
+                    image: $(this).data('image'),
                     id: $(this).data('id'),
                     category: $(this).data('category') || '',
-                    content_type: $(this).data('content_type') || '',
                     description: $(this).data('description') || '',
                     isNew: $(this).data('isnew') || false
                 });
@@ -76,80 +79,116 @@
             return JSON.parse(localStorage.getItem('recentlyPlayed') || "[]");
         }
 
+        function saveRecentlyPlayed(song) {
+            let recent = getRecentlyPlayed();
+            recent = recent.filter(item => item.id !== song.id);
+            recent.unshift(song);
+            if (recent.length > 10) recent.pop();
+            localStorage.setItem('recentlyPlayed', JSON.stringify(recent));
+        }
+
         function renderRecentlyPlayed() {
             const recent = getRecentlyPlayed();
             const section = $('#recentlyPlayedSection');
             const container = $('#recentlyPlayedContainer');
             container.empty();
-
             if (recent.length === 0) {
                 section.hide();
                 return;
-            } else {
-                section.show();
             }
-
+            section.show();
             recent.forEach((song, idx) => {
-                const songHtml = `
-                <div data-aos="fade-left" data-aos-anchor="#example-anchor" data-aos-offset="500" data-aos-duration="700" style="height:200px; width:200px;" class="song-item recently-played" 
-                    data-title="${song.title}" 
-                    data-audio="${song.audio}" 
-                    data-image="${song.image || 'default.png'}" 
-                    data-id="${song.id}" 
-                    data-category="${song.category || ''}"
-                    data-content_type="${song.content_type || ''}"
-                    data-description="${song.description || ''}"
-                    data-isnew="${song.isNew}"
-                    data-index="${idx}">
+                container.append(`
+                <div class="song-item recently-played" data-id="${song.id}" data-title="${song.title}" data-audio="${song.audio}" data-image="${song.image || 'default.png'}" data-category="${song.category || ''}" data-description="${song.description || ''}" data-index="${idx}" style="height:200px;width:200px;">
                     <img src="${song.image || 'default.png'}" alt="${song.title}">
                     <div class="song-info">
-                        <p class="song-title">
-                            ${song.title}
-                            ${song.isNew ? '<span class="badge bg-danger badge-new">New</span>' : ''}
-                        </p>
-                        <p class="song-type">${song.content_type || ''}</p>
+                        <p class="song-title">${song.title} ${song.isNew ? '<span class="badge bg-danger badge-new">New</span>' : ''}</p>
                         <p class="song-description">${song.description || ''}</p>
                     </div>
                 </div>
-            `;
-                container.append(songHtml);
+            `);
             });
         }
 
-        /*** Scroll arrows functionality ***/
-        const scrollAmount = 300;
+        /*** Scroll buttons ***/
         $('#recentNext').click(() => $('#recentlyPlayedContainer').animate({
-            scrollLeft: '+=' + scrollAmount
+            scrollLeft: '+=300'
         }, 300));
         $('#recentPrev').click(() => $('#recentlyPlayedContainer').animate({
-            scrollLeft: '-=' + scrollAmount
+            scrollLeft: '-=300'
         }, 300));
 
-        // Initial load
-        loadContents();
+        /*** Play song in persistent player ***/
+        function playSong(song) {
+            localStorage.setItem('currentSong', JSON.stringify(song));
+            saveRecentlyPlayed(song);
 
-        /*** Song click handlers: redirect to player.php ***/
-        $(document).on('click', '.song-item', function() {
-            const songId = $(this).data('id');
-            const currentTime = 0; // start at beginning
-            window.location.href = `player.php?id=${songId}&time=${currentTime}`;
-        });
+            // Show mini player only; do NOT auto-expand
+            miniPlayer.show();
+            playerContainer.hide();
 
-        $(document).on('click', '#recentlyPlayedContainer .song-item', function() {
-            const songId = $(this).data('id');
-            const currentTime = 0;
-            window.location.href = `player.php?id=${songId}&time=${currentTime}`;
-        });
+            playerTitleEl.text(song.title);
+            playerImgEl.attr('src', song.image || 'default.png');
+            playerCategoryEl.text(song.category || '');
+            playerDescriptionEl.text(song.description || 'No description available.');
 
-        function getGreeting(name) {
-            const hour = new Date().getHours();
-            let greeting = hour < 12 ? "Good Morning" :
-                hour < 18 ? "Good Afternoon" :
-                "Good Evening";
-            return `${greeting} ${name}`;
+            if (audioEl.src !== song.audio) {
+                audioEl.src = song.audio;
+                audioEl.currentTime = song.time || 0;
+            }
+            audioEl.play();
+            $('#playPauseBtn i, #miniPlayPauseBtn i').removeClass('bi-play-fill').addClass('bi-pause-fill');
         }
 
-        document.getElementById("greeting").textContent = getGreeting("");
+        $(document).on('click', '.song-item, .recently-played', function() {
+            const song = {
+                id: $(this).data('id'),
+                title: $(this).data('title'),
+                audio: $(this).data('audio'),
+                image: $(this).data('image') || 'default.png',
+                category: $(this).data('category') || '',
+                description: $(this).data('description') || '',
+                time: 0
+            };
+            playSong(song);
+        });
+
+        /*** Load persistent player from localStorage on page load ***/
+        const savedSong = JSON.parse(localStorage.getItem('currentSong') || '{}');
+        if (savedSong.audio) {
+            miniPlayer.show();
+            playerContainer.hide();
+            playerTitleEl.text(savedSong.title);
+            playerImgEl.attr('src', savedSong.image || 'default.png');
+            playerCategoryEl.text(savedSong.category || '');
+            playerDescriptionEl.text(savedSong.description || 'No description available.');
+            if (audioEl.src !== savedSong.audio) {
+                audioEl.src = savedSong.audio;
+                audioEl.currentTime = savedSong.time || 0;
+            }
+            // Keep playing
+            audioEl.play();
+            $('#playPauseBtn i, #miniPlayPauseBtn i').removeClass('bi-play-fill').addClass('bi-pause-fill');
+        }
+
+        /*** Update current time continuously ***/
+        $('#audioPlayer').on('timeupdate', function() {
+            const saved = JSON.parse(localStorage.getItem('currentSong') || '{}');
+            if (saved.audio) {
+                saved.time = this.currentTime;
+                localStorage.setItem('currentSong', JSON.stringify(saved));
+            }
+        });
+
+        /*** Greeting ***/
+        function getGreeting() {
+            const hour = new Date().getHours();
+            return hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
+        }
+        $('#greeting').text(getGreeting());
+
+        // Initial AJAX content load
+        loadContents();
     });
 </script>
 

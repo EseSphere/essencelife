@@ -1,77 +1,94 @@
 <?php
 session_start();
 include 'dbconnections.php';
-header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id'])) {
+$user_id = $_SESSION['user_id'] ?? null;
+if (!$user_id) {
     echo json_encode(['status' => 'error', 'message' => 'Not logged in']);
     exit;
 }
 
-$user_id = $_SESSION['user_id'];
+$action = $_POST['action'] ?? '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
-    // CHANGE PASSWORD
-    if (isset($_POST['action']) && $_POST['action'] === 'change_password') {
-        $current = $_POST['current_password'];
-        $new = $_POST['new_password'];
-        $confirm = $_POST['confirm_password'];
-
-        $user = $conn->query("SELECT * FROM users WHERE user_id='$user_id'")->fetch_assoc();
-        if (!$user) {
-            echo json_encode(['status' => 'error', 'message' => 'User not found']);
-            exit;
-        }
-
-        if (!password_verify($current, $user['password'])) {
-            echo json_encode(['status' => 'error', 'message' => 'Current password is incorrect']);
-            exit;
-        }
-
-        if ($new !== $confirm) {
-            echo json_encode(['status' => 'error', 'message' => 'New passwords do not match']);
-            exit;
-        }
-
-        $hashed = password_hash($new, PASSWORD_DEFAULT);
-        if ($conn->query("UPDATE users SET password='$hashed' WHERE user_id='$user_id'")) {
-            echo json_encode(['status' => 'success']);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'Failed to update password']);
-        }
+if ($action === 'create') {
+    $name = trim($_POST['playlist_name'] ?? '');
+    if ($name === '') {
+        echo json_encode(['status' => 'error', 'message' => 'Playlist name cannot be empty']);
         exit;
     }
 
-    // PROFILE UPDATE
-    $name = $conn->real_escape_string($_POST['name']);
-    $email = $conn->real_escape_string($_POST['email']);
-    $phone = $conn->real_escape_string($_POST['phone']);
-    $updateFields = "name='$name', email='$email', phone='$phone'";
-
-    // Handle image upload
-    if (isset($_FILES['image']) && $_FILES['image']['size'] > 0) {
-        $ext = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-        $filename = 'uploads/users/' . uniqid() . '.' . $ext;
-        if (!is_dir('uploads/users')) mkdir('uploads/users', 0777, true);
-        if (move_uploaded_file($_FILES['image']['tmp_name'], $filename)) {
-            $updateFields .= ", image='" . $conn->real_escape_string($filename) . "'";
-        }
-    } else {
-        // Keep existing image if no new image uploaded
-        if (!empty($_POST['existing_image'])) {
-            $updateFields .= ", image='" . $conn->real_escape_string($_POST['existing_image']) . "'";
-        }
+    // Prevent duplicate playlist names for the same user
+    $check = $conn->prepare("SELECT id FROM playlists WHERE user_id = ? AND name = ?");
+    $check->bind_param("ss", $user_id, $name);
+    $check->execute();
+    $check->store_result();
+    if ($check->num_rows > 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Playlist already exists']);
+        exit;
     }
 
-    $sql = "UPDATE users SET $updateFields WHERE user_id='$user_id'";
-    if ($conn->query($sql)) {
-        $image = isset($filename) ? $filename : $_POST['existing_image'] ?? null;
-        echo json_encode(['status' => 'success', 'image' => $image]);
+    $stmt = $conn->prepare("INSERT INTO playlists (user_id, name) VALUES (?, ?)");
+    $stmt->bind_param("ss", $user_id, $name);
+    if ($stmt->execute()) {
+        // Get the inserted playlist ID
+        $playlist_id = $stmt->insert_id;
+
+        // Return the new playlist object with audio_count = 0
+        $newPlaylist = [
+            'id' => $playlist_id,
+            'name' => $name,
+            'audio_count' => 0
+        ];
+
+        echo json_encode([
+            'status' => 'success',
+            'message' => 'Playlist created successfully',
+            'playlist' => $newPlaylist
+        ]);
     } else {
-        echo json_encode(['status' => 'error', 'message' => 'Failed to update profile']);
+        echo json_encode(['status' => 'error', 'message' => 'Failed to create playlist']);
     }
     exit;
 }
 
-echo json_encode(['status' => 'error', 'message' => 'Invalid request']);
+if ($action === 'list') {
+    $playlists = [];
+    $sql = "SELECT p.id, p.name,
+            (SELECT COUNT(*) FROM playlist_audios pa WHERE pa.playlist_id = p.id) as audio_count
+            FROM playlists p
+            WHERE p.user_id = ?
+            ORDER BY p.id DESC";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("s", $user_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    while ($row = $res->fetch_assoc()) {
+        $playlists[] = $row;
+    }
+    echo json_encode(['status' => 'success', 'playlists' => $playlists]);
+    exit;
+}
+
+if ($action === 'delete') {
+    $playlist_id = intval($_POST['playlist_id'] ?? 0);
+    if ($playlist_id > 0) {
+        // Delete playlist audios first
+        $stmt = $conn->prepare("DELETE FROM playlist_audios WHERE playlist_id = ?");
+        $stmt->bind_param("i", $playlist_id);
+        $stmt->execute();
+
+        // Then delete playlist
+        $stmt = $conn->prepare("DELETE FROM playlists WHERE id = ? AND user_id = ?");
+        $stmt->bind_param("is", $playlist_id, $user_id);
+        if ($stmt->execute()) {
+            echo json_encode(['status' => 'success']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Failed to delete playlist']);
+        }
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid playlist']);
+    }
+    exit;
+}
+
+echo json_encode(['status' => 'error', 'message' => 'Invalid action']);

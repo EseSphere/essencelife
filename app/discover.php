@@ -21,7 +21,6 @@
 
 <script>
     $(document).ready(function() {
-        let songs = [];
 
         /*** AJAX content loader ***/
         function loadContents(url = 'fetch_discover.php') {
@@ -30,7 +29,6 @@
                 method: 'GET',
                 success: function(data) {
                     $('#contentContainer').html(data);
-                    loadSongs();
                 },
                 error: function() {
                     $('#contentContainer').html('<p class="text-danger">Failed to load content.</p>');
@@ -38,57 +36,29 @@
             });
         }
 
-        /*** Load songs from page ***/
-        function loadSongs() {
-            songs = [];
-            $('.song-item').each(function() {
-                songs.push({
-                    title: $(this).data('title'),
-                    audio: $(this).data('audio'),
-                    image: $(this).data('image') || 'default.png',
-                    id: $(this).data('id')
-                });
-            });
-        }
+        // --- Show only mini player on this page ---
+        $('#miniPlayer').show(); // Always show mini player
+        $('#audioPlayerContainer').hide(); // Do not auto-expand
 
         // Initial load
         loadContents();
 
-        /*** Song click handlers: redirect to player.php ***/
+        // --- Song click handlers for this page ---
         $(document).on('click', '.song-item', function() {
-            const songId = $(this).data('id');
-            const currentTime = 0; // start at beginning
-            window.location.href = `player.php?id=${songId}&time=${currentTime}`;
+            // Use the playPersistentAudio() function already defined in footer.php
+            const songData = {
+                id: $(this).data('id'),
+                title: $(this).data('title'),
+                audio: $(this).data('audio'),
+                image: $(this).data('image') || 'default.png',
+                category: $(this).data('category') || '',
+                description: $(this).data('description') || '',
+                related: $(this).data('related') ? JSON.parse($(this).attr('data-related')) : [],
+                time: 0
+            };
+            window.playPersistentAudio(songData); // Footer handles audio playback
         });
 
-        /*** Redirect to player.php when clicking the song title in case used elsewhere ***/
-        $(document).on('click', '#currentSongTitle', function() {
-            const index = 0; // fallback index
-            const song = songs[index];
-            if (song) {
-                window.location.href = `player.php?id=${song.id}&time=0`;
-            }
-        });
-
-        /*** Search/filter songs ***/
-        $('#searchInput').on('keyup', function() {
-            const filter = $(this).val().toLowerCase();
-            $('.song-item').each(function() {
-                const text = $(this).text().toLowerCase();
-                $(this).toggle(text.includes(filter));
-            });
-        });
-
-        /*** Greeting function ***/
-        function getGreeting(name) {
-            const hour = new Date().getHours();
-            let greeting = hour < 12 ? "Good Morning" :
-                hour < 18 ? "Good Afternoon" :
-                "Good Evening";
-            return `${greeting} ${name}`;
-        }
-
-        document.getElementById("greeting").textContent = getGreeting("Samson");
     });
 </script>
 

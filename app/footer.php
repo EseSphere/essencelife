@@ -30,30 +30,124 @@ if ($user_id) {
   </div>
 </nav>
 
-<!-- Persistent Audio Player -->
-<div id="audioPlayerContainer" style="display:none; position:fixed; bottom:65px; left:0; right:0; z-index:999;">
-  <div class="player-main w-100">
-    <div id="currentSongInfo">
-      <div class="player-controls">
-        <div class="row align-items-center">
-          <div class="col-3"><img id="currentSongImage" src="default.png" style="width:50px;height:50px;"></div>
-          <div class="col-7 text-center">
-            <div id="currentSongTitle">Song Title</div>
-            <input type="range" id="progressBar" value="0" min="0" max="100" step="0.1" style="width:100%;">
-            <span id="currentTime">0:00</span> / <span id="duration">0:00</span>
-          </div>
-          <div class="col-2 text-end">
-            <button id="closePlayerBtn">✖</button>
-          </div>
-          <div class="col-12 text-center">
-            <button id="prevBtn">⏮️</button>
-            <button id="playPauseBtn">▶️</button>
-            <button id="nextBtn">⏭️</button>
+<!-- Mini Player (Collapsed) -->
+<div id="miniPlayer"
+  style="display:none; position:fixed; bottom:65px; left:0; right:0; z-index:1000; 
+            background:rgba(15,76,129,0.95); backdrop-filter:blur(8px); 
+            color:#fff; border-top-left-radius:15px; border-top-right-radius:15px; 
+            box-shadow:0 -4px 12px rgba(0,0,0,0.3); padding:10px;">
+  <div class="d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center">
+      <img id="miniSongImage" src="default.png"
+        class="rounded me-2 shadow-sm"
+        style="width:40px;height:40px;object-fit:cover;">
+      <div class="me-2">
+        <div id="miniSongTitle" class="fw-bold small text-truncate" style="max-width:150px;">Song Title</div>
+        <small id="miniSongCategory" class="text-light">Category</small>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button id="miniPlayPauseBtn" class="btn btn-light btn-sm rounded-circle">
+        <i class="bi bi-play-fill text-dark"></i>
+      </button>
+      <button id="expandPlayerBtn" class="btn btn-outline-light btn-sm rounded-circle">
+        <i class="bi bi-chevron-up"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Full Player (Expanded) -->
+<div id="audioPlayerContainer"
+  style="display:none; position:fixed; bottom:65px; left:0; right:0; z-index:999; 
+            background:rgba(15,76,129,0.95); backdrop-filter:blur(10px); 
+            color:#fff; border-top-left-radius:20px; border-top-right-radius:20px; 
+            box-shadow:0 -5px 20px rgba(0,0,0,0.4); font-family:'Segoe UI',sans-serif;">
+
+  <!-- Player Header -->
+  <div class="d-flex justify-content-between align-items-center p-3 border-bottom" style="border-color:rgba(255,255,255,0.1)!important;">
+    <div class="d-flex align-items-center">
+      <img id="currentSongImage" src="default.png"
+        class="rounded shadow-sm me-3"
+        style="width:55px;height:55px;object-fit:cover;">
+      <div>
+        <div id="currentSongTitle" class="fw-bold text-truncate" style="max-width:200px; font-size:1rem;">Song Title</div>
+        <small id="currentSongCategory" class="text-light">Category</small>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <button id="minimizePlayerBtn" class="btn btn-sm btn-outline-light rounded-circle">
+        <i class="bi bi-chevron-down"></i>
+      </button>
+      <button id="closePlayerBtn" class="btn btn-sm btn-outline-light rounded-circle">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="px-3 mt-2">
+    <input type="range" id="progressBar" value="0" min="0" max="100" step="0.1"
+      class="form-range"
+      style="accent-color:#ffce54; background:linear-gradient(to right,#ffce54,#ff6f61);">
+    <div class="d-flex justify-content-between small text-light">
+      <span id="currentTime">0:00</span>
+      <span id="duration">0:00</span>
+    </div>
+  </div>
+
+  <!-- Player Controls -->
+  <div class="text-center py-3">
+    <button id="prevBtn" class="btn btn-outline-light btn-lg rounded-circle mx-2 shadow-sm">
+      <i class="bi bi-skip-backward-fill"></i>
+    </button>
+    <button id="playPauseBtn" class="btn btn-light btn-lg rounded-circle mx-3 shadow">
+      <i class="bi bi-play-fill text-dark"></i>
+    </button>
+    <button id="nextBtn" class="btn btn-outline-light btn-lg rounded-circle mx-2 shadow-sm">
+      <i class="bi bi-skip-forward-fill"></i>
+    </button>
+  </div>
+
+  <!-- Expandable Details + Related -->
+  <div class="accordion accordion-flush" id="playerDetailsAccordion">
+    <!-- Song Details -->
+    <div class="accordion-item" style="background:transparent; color:#fff;">
+      <h2 class="accordion-header" id="headingDetails">
+        <button class="accordion-button collapsed text-white" type="button"
+          data-bs-toggle="collapse" data-bs-target="#collapseDetails"
+          aria-expanded="false" aria-controls="collapseDetails"
+          style="background:rgba(255,255,255,0.05); font-weight:500;">
+          <i class="bi bi-info-circle me-2"></i> Song Details
+        </button>
+      </h2>
+      <div id="collapseDetails" class="accordion-collapse collapse" aria-labelledby="headingDetails" data-bs-parent="#playerDetailsAccordion">
+        <div class="accordion-body text-light">
+          <p id="currentSongDescription" class="mb-0">No description available.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Related Audios -->
+    <div class="accordion-item" style="background:transparent; color:#fff;">
+      <h2 class="accordion-header" id="headingRelated">
+        <button class="accordion-button collapsed text-white" type="button"
+          data-bs-toggle="collapse" data-bs-target="#collapseRelated"
+          aria-expanded="false" aria-controls="collapseRelated"
+          style="background:rgba(255,255,255,0.05); font-weight:500;">
+          <i class="bi bi-music-note-list me-2"></i> Related Audios
+        </button>
+      </h2>
+      <div id="collapseRelated" class="accordion-collapse collapse" aria-labelledby="headingRelated" data-bs-parent="#playerDetailsAccordion">
+        <div class="accordion-body">
+          <div id="relatedAudios" class="d-flex flex-wrap gap-3">
+            <!-- Related audios dynamically injected -->
           </div>
         </div>
       </div>
     </div>
   </div>
+
   <audio id="audioPlayer"></audio>
 </div>
 
@@ -97,116 +191,201 @@ if ($user_id) {
 <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 
 <script>
   AOS.init();
+
   $(document).ready(function() {
-    // Show feelings modal after 6 seconds
-    setTimeout(function() {
-      var feelingsModal = new bootstrap.Modal(document.getElementById('feelingsModal'));
-      feelingsModal.show();
-    }, 6000);
+    // Elements
+    const playerContainer = $('#audioPlayerContainer');
+    const miniPlayer = $('#miniPlayer');
+    const audioEl = $('#audioPlayer')[0];
 
-    // Mapping moods to recommended audio
-    const moodAudioMap = {
-      calm: [{
-          title: 'Acoustic Sunrise',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-          image: 'https://images.unsplash.com/photo-1507874457470-272b3c8d8ee2?w=400'
-        },
-        {
-          title: 'Calm Breeze',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
-          image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=400'
-        }
-      ],
-      happy: [{
-          title: 'Ocean Waves',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-          image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=400'
-        },
-        {
-          title: 'Mountain Echoes',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
-          image: 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=400'
-        }
-      ],
-      tired: [{
-          title: 'Thunderstorm',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3',
-          image: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=400'
-        },
-        {
-          title: 'Desert Winds',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3',
-          image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=400'
-        }
-      ],
-      sad: [{
-          title: 'Forest Whisper',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
-          image: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=400'
-        },
-        {
-          title: 'Courage Story',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3',
-          image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400'
-        }
-      ],
-      excited: [{
-          title: 'Morning Motivation',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
-          image: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=400'
-        },
-        {
-          title: 'Success Path',
-          url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3',
-          image: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400'
-        }
-      ]
-    };
+    const titleEl = $('#currentSongTitle');
+    const imgEl = $('#currentSongImage');
+    const categoryEl = $('#currentSongCategory');
+    const descEl = $('#currentSongDescription');
+    const relatedEl = $('#relatedAudios');
 
-    // Handle emoji button clicks with random selection
-    $('.emoji-btn').click(function() {
-      var feeling = $(this).data('feeling');
+    const miniTitleEl = $('#miniSongTitle');
+    const miniImgEl = $('#miniSongImage');
+    const miniCategoryEl = $('#miniSongCategory');
 
-      // Hide modal
-      var modalEl = document.getElementById('feelingsModal');
-      var modal = bootstrap.Modal.getInstance(modalEl);
-      modal.hide();
+    // Restore panel state
+    function restorePanelState() {
+      const state = localStorage.getItem('audioPanelState');
+      if (state === 'expanded') {
+        playerContainer.show();
+        miniPlayer.hide();
+      } else if (state === 'collapsed') {
+        playerContainer.hide();
+        miniPlayer.show();
+      }
+    }
 
-      // Randomly pick a recommended audio for the mood
-      var moodTracks = moodAudioMap[feeling];
-      var randomIndex = Math.floor(Math.random() * moodTracks.length);
-      var audioData = moodTracks[randomIndex];
+    // Show / restore audio
+    function restoreAudio() {
+      const savedSong = JSON.parse(localStorage.getItem('currentSong') || '{}');
+      if (!savedSong.audio) return;
 
-      // Show and update audio player
-      $('#audioPlayerContainer').show();
-      $('#currentSongTitle').text(audioData.title);
-      $('#currentSongImage').attr('src', audioData.image);
-      var player = document.getElementById('audioPlayer');
-      player.src = audioData.url;
-      player.play();
+      // Mini Player
+      miniTitleEl.text(savedSong.title || '');
+      miniImgEl.attr('src', savedSong.image || 'default.png');
+      miniCategoryEl.text(savedSong.category || '');
+      miniPlayer.show();
 
-      console.log('Playing', feeling, audioData.title);
+      // Full Player
+      titleEl.text(savedSong.title || '');
+      imgEl.attr('src', savedSong.image || 'default.png');
+      categoryEl.text(savedSong.category || '');
+      descEl.text(savedSong.description || 'No description available.');
+
+      // Related Audios
+      relatedEl.empty();
+      if (savedSong.related && savedSong.related.length) {
+        savedSong.related.forEach(rel => {
+          relatedEl.append(`
+            <div class="card bg-transparent border-light text-white shadow-sm" style="width:100px;cursor:pointer;" 
+                 onclick='playPersistentAudio(${JSON.stringify(rel)})'>
+              <img src="${rel.image || 'default.png'}" class="card-img-top rounded" style="height:80px;object-fit:cover;">
+              <div class="card-body p-1 text-center">
+                <small class="fw-bold d-block text-truncate">${rel.title}</small>
+              </div>
+            </div>
+          `);
+        });
+      }
+
+      // Play audio
+      if (audioEl.src !== savedSong.audio) {
+        audioEl.src = savedSong.audio;
+        audioEl.currentTime = savedSong.time || 0;
+        audioEl.play();
+        $('#playPauseBtn i, #miniPlayPauseBtn i').removeClass('bi-play-fill').addClass('bi-pause-fill');
+      }
+    }
+
+    // Save audio
+    function saveAudio() {
+      const savedSong = JSON.parse(localStorage.getItem('currentSong') || '{}');
+      savedSong.title = titleEl.text();
+      savedSong.image = imgEl.attr('src');
+      savedSong.audio = audioEl.src;
+      savedSong.category = categoryEl.text();
+      savedSong.description = descEl.text();
+      savedSong.time = audioEl.currentTime;
+      localStorage.setItem('currentSong', JSON.stringify(savedSong));
+    }
+
+    // Play / Pause buttons
+    $('#playPauseBtn, #miniPlayPauseBtn').click(function() {
+      if (audioEl.paused) {
+        audioEl.play();
+        $('#playPauseBtn i, #miniPlayPauseBtn i').removeClass('bi-play-fill').addClass('bi-pause-fill');
+      } else {
+        audioEl.pause();
+        $('#playPauseBtn i, #miniPlayPauseBtn i').removeClass('bi-pause-fill').addClass('bi-play-fill');
+      }
     });
 
-    // AJAX Navigation
+    audioEl.addEventListener('timeupdate', function() {
+      const progress = (audioEl.currentTime / audioEl.duration) * 100 || 0;
+      $('#progressBar').val(progress);
+      const minutes = Math.floor(audioEl.currentTime / 60);
+      const seconds = Math.floor(audioEl.currentTime % 60).toString().padStart(2, '0');
+      $('#currentTime').text(`${minutes}:${seconds}`);
+      const durMinutes = Math.floor(audioEl.duration / 60) || 0;
+      const durSeconds = Math.floor(audioEl.duration % 60).toString().padStart(2, '0');
+      $('#duration').text(`${durMinutes}:${durSeconds}`);
+      saveAudio();
+    });
+
+    $('#progressBar').on('input', function() {
+      audioEl.currentTime = (audioEl.duration * $(this).val()) / 100;
+      saveAudio();
+    });
+
+    // Expand / Collapse / Close with state saving
+    $('#expandPlayerBtn').click(function() {
+      miniPlayer.slideUp(300);
+      playerContainer.slideDown(300);
+      localStorage.setItem('audioPanelState', 'expanded');
+    });
+
+    $('#minimizePlayerBtn').click(function() {
+      playerContainer.slideUp(300);
+      miniPlayer.slideDown(300);
+      localStorage.setItem('audioPanelState', 'collapsed');
+    });
+
+    $('#closePlayerBtn').click(function() {
+      playerContainer.slideUp(300);
+      miniPlayer.slideUp(300);
+      audioEl.pause();
+      localStorage.removeItem('currentSong');
+      localStorage.removeItem('audioPanelState');
+      $('#playPauseBtn i, #miniPlayPauseBtn i').removeClass('bi-pause-fill').addClass('bi-play-fill');
+    });
+
+    // Play persistent audio
+    window.playPersistentAudio = function(song) {
+      localStorage.setItem('currentSong', JSON.stringify({
+        id: song.id || 0,
+        title: song.title,
+        image: song.image || 'default.png',
+        audio: song.url,
+        category: song.category || '',
+        content_type: song.content_type || '',
+        description: song.description || '',
+        related: song.related || [],
+        time: 0
+      }));
+      restoreAudio();
+      restorePanelState();
+    };
+
+    restoreAudio();
+    restorePanelState();
+
+    // --- Feelings Modal ---
+    if (!sessionStorage.getItem('feelingsModalShown')) {
+      setTimeout(function() {
+        const modalEl = document.getElementById('feelingsModal');
+        const modal = new bootstrap.Modal(modalEl);
+        modal.show();
+        sessionStorage.setItem('feelingsModalShown', 'true');
+      }, 6000);
+    }
+
+    // --- AJAX Page Loading ---
+    // --- AJAX Page Loading (SPA) ---
     function loadPage(url) {
       $.ajax({
         url: url,
         type: 'GET',
         dataType: 'html',
         success: function(data) {
-          var newContent = $(data).find('#mainContent').html();
+          // Replace #mainContent
+          const newContent = $(data).find('#mainContent').html();
           $('#mainContent').html(newContent);
 
+          // Re-initialize AOS
+          AOS.init();
+
+          // Re-bind dynamic songs
+          bindDynamicSongs();
+
+          // Re-initialize playlist module if playlist page loaded
+          if ($('#playlistPage').length && window.PlaylistModule) {
+            window.PlaylistModule.init();
+          }
+
+          // Highlight active bottom navbar link
           $('.navbar-bottom .nav-link').removeClass('active');
           $('.navbar-bottom .nav-link[href="' + url + '"]').addClass('active');
 
+          // Update browser URL without reload
           history.pushState(null, '', url);
-          AOS.init();
         },
         error: function() {
           alert('Failed to load page.');
@@ -214,16 +393,36 @@ if ($user_id) {
       });
     }
 
+    // Bottom navbar SPA navigation
     $('.navbar-bottom .nav-link').click(function(e) {
       e.preventDefault();
-      loadPage($(this).attr('href'));
+      const url = $(this).attr('href');
+      loadPage(url);
     });
 
+    // Handle browser back/forward buttons
     window.onpopstate = function() {
       loadPage(location.pathname);
     };
+
+
+    // Bind dynamic songs
+    function bindDynamicSongs() {
+      $(document).on('click', '.song-item', function() {
+        const songData = {
+          id: $(this).data('id'),
+          title: $(this).data('title'),
+          image: $(this).data('image') || 'default.png',
+          url: $(this).data('audio'),
+          category: $(this).data('category') || '',
+          content_type: $(this).data('content_type') || '',
+          description: $(this).data('description') || '',
+          related: $(this).data('related') ? JSON.parse($(this).attr('data-related')) : []
+        };
+        playPersistentAudio(songData);
+      });
+    }
+
+    bindDynamicSongs();
   });
 </script>
-</body>
-
-</html>
